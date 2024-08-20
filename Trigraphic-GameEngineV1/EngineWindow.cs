@@ -31,8 +31,6 @@ namespace Trigraphic_GameEngineV1
         }
         protected override void OnLoad()
         {
-            base.OnLoad();
-
             GraphicsCore.SetRenderParameters(new(0.04f, 0.0f, 0.07f, 1.0f));
             CenterWindow();
             IsVisible = true;

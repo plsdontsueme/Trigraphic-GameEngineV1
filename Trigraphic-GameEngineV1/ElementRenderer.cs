@@ -33,12 +33,12 @@ namespace Trigraphic_GameEngineV1
         public ElementRenderer()
         {
             _material = Material.DEFAULT;
-            _material.shader.AddElementRenderer(this);
+            if(_isLoaded) _material.shader.AddElementRenderer(this);
         }
         public ElementRenderer(Material material)
         {
             _material = material;
-            _material.shader.AddElementRenderer(this);
+            if (_isLoaded) _material.shader.AddElementRenderer(this);
         }
 
         protected override void OnLoad()

@@ -17,7 +17,6 @@ namespace Trigraphic_GameEngineV1
         float time;
         protected override void OnUpdate(float deltaTime)
         {
-            base.OnUpdate(deltaTime);
             if (_translation.HasValue) gameObject.Position += _translation.Value * deltaTime;
             time += deltaTime;
             if (_rotationDirection.HasValue) gameObject.Rotation = Quaternion.FromEulerAngles(_rotationDirection.Value * time);
