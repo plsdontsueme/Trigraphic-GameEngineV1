@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
+﻿
 namespace Trigraphic_GameEngineV1
 {
     internal class Component
@@ -23,19 +18,24 @@ namespace Trigraphic_GameEngineV1
 
         #region event logic
         protected bool _isLoaded;
-        public virtual void OnLoad()
+        public void Load()
         {
             if (_isLoaded)
                 EngineDebugManager.throwNewOperationRedundancyWarning("component already loaded");
             _isLoaded = true;
+            OnLoad();
         }
-        public virtual void OnUnload()
+        public void Unload()
         {
             if (!_isLoaded)
                 EngineDebugManager.throwNewOperationRedundancyWarning("component already unloaded");
             _isLoaded = false;
+            OnUnload();
         }
-        public virtual void OnUpdate(float deltaTime) { }
+        public void Update(float deltaTime) => OnUpdate(deltaTime);
+        protected virtual void OnLoad() { }
+        protected virtual void OnUnload() { }
+        protected virtual void OnUpdate(float deltaTime) { }
         #endregion
     }
 }

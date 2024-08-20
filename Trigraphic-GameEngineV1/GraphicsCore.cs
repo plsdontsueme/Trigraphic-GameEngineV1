@@ -99,12 +99,12 @@ namespace Trigraphic_GameEngineV1
 
             foreach (var key in locations.Keys)
             {
-                Console.WriteLine(key + " -- " + locations[key]);
+                EngineDebugManager.Send(key + " -- " + locations[key]);
             }
             if (locations.ContainsKey(UniformConvention.TEXTURE_DIFFUSE))
                 GL.Uniform1(locations[UniformConvention.TEXTURE_DIFFUSE], 0);
         }
-        public static Shader ActiveShader;
+        public static Shader? ActiveShader;
         public static void UseShaderProgram(int handle, Shader shader)
         {
             GL.UseProgram(handle);
@@ -112,14 +112,17 @@ namespace Trigraphic_GameEngineV1
         }
         public static void SetModelMatrix(ref Matrix4 matrix)
         {
+            if (ActiveShader == null) throw new InvalidOperationException();
             GL.UniformMatrix4(ActiveShader.GetUniformLocation(UniformConvention.MATRIX_MODEL), true, ref matrix);
         }
         public static void SetViewMatrix(ref Matrix4 matrix)
         {
+            if (ActiveShader == null) throw new InvalidOperationException();
             GL.UniformMatrix4(ActiveShader.GetUniformLocation(UniformConvention.MATRIX_VIEW), true, ref matrix);
         }
         public static void SetProjectionMatrix(ref Matrix4 matrix)
         {
+            if (ActiveShader == null) throw new InvalidOperationException();
             GL.UniformMatrix4(ActiveShader.GetUniformLocation(UniformConvention.MATRIX_PROJECTION), true, ref matrix);
         }
 

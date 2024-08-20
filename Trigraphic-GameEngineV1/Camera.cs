@@ -21,18 +21,16 @@ namespace Trigraphic_GameEngineV1
             }
             _mainCameras.Add(slot, this);
         }
-        public override void OnLoad()
+        protected override void OnLoad()
         {
-            base.OnLoad();
             if (!_mainCameras.ContainsKey(0))
             {
                 _mainCameras.Add(0, this);
                 cameraSlot = 0;
             }
         }
-        public override void OnUnload()
+        protected override void OnUnload()
         {
-            base.OnUnload();
             if (cameraSlot.HasValue)
                 _mainCameras.Remove(cameraSlot.Value);
         }

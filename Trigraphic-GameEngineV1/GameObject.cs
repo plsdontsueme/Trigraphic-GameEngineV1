@@ -125,7 +125,7 @@ namespace Trigraphic_GameEngineV1
         {
             if (!_transformValid)
             {
-                Console.WriteLine("update transform");
+                EngineDebugManager.Send("update transform");
                 if (_parent == null)
                 {
                     _globalPosition = _localPosition;
@@ -175,12 +175,12 @@ namespace Trigraphic_GameEngineV1
         {
             component.ObjAssign(this);
             _components.Add(component);
-            if (Loaded) component.OnLoad();
+            if (Loaded) component.Load();
         }
         public void RemoveComponent(Component component)
         {
             _components.Remove(component);
-            component.OnUnload();
+            component.Unload();
             //delete component
         }
         public T? GetComponent<T>() where T : Component
@@ -191,15 +191,9 @@ namespace Trigraphic_GameEngineV1
         }
         public T? GetComponentInChildren<T>() where T : Component
         {
-            T? component = GetComponent<T>();
-            if (component != null)
-            {
-                return component;
-            }
-
             foreach (var child in _children)
             {
-                T? childComponent = child.GetComponentInChildren<T>();
+                T? childComponent = child._GetComponentInSelfOrChildren<T>();
                 if (childComponent != null)
                 {
                     return childComponent;
@@ -207,6 +201,25 @@ namespace Trigraphic_GameEngineV1
             }
 
             EngineDebugManager.throwNewOperationRedundancyWarning($"No Component of Type '{typeof(T)}' found in GameObject or its children.");
+            return null;
+        }
+        T? _GetComponentInSelfOrChildren<T>() where T : Component
+        {
+            T? component = _components.OfType<T>().FirstOrDefault();
+            if (component != null)
+            {
+                return component;
+            }
+
+            foreach (var child in _children)
+            {
+                T? childComponent = child._GetComponentInSelfOrChildren<T>();
+                if (childComponent != null)
+                {
+                    return childComponent;
+                }
+            }
+
             return null;
         }
 
@@ -221,7 +234,7 @@ namespace Trigraphic_GameEngineV1
             Loaded = true;
             foreach (var component in _components)
             {
-                component.OnLoad();
+                component.Load();
             }
             foreach (var child in _children)
             {
@@ -235,7 +248,7 @@ namespace Trigraphic_GameEngineV1
             Loaded = false;
             foreach (var component in _components)
             {
-                component.OnUnload();
+                component.Unload();
             }
             foreach (var child in _children)
             {
@@ -244,12 +257,12 @@ namespace Trigraphic_GameEngineV1
         }
         protected void _Update(float deltaTime)
         {
-            Console.WriteLine("update obj");
-            Console.WriteLine(_children.Count);
+            EngineDebugManager.Send("update obj");
+            EngineDebugManager.Send(_children.Count);
             _UpdateTransform();
             foreach (var component in _components)
             {
-                component.OnUpdate(deltaTime);
+                component.Update(deltaTime);
             }
             foreach (var child in _children)
             {

@@ -17,6 +17,7 @@ namespace Trigraphic_GameEngineV1
 
         private static void _RenderComposition(OpenTK.Windowing.Common.FrameEventArgs obj)
         {
+            if (_selectedComposition == null) throw new InvalidOperationException();
             foreach (Shader shader in _selectedComposition.Value.ShaderOrder)
             {
                 shader.RenderAllElements();

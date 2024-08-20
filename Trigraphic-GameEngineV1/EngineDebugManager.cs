@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -24,7 +25,23 @@ namespace Trigraphic_GameEngineV1
             => throwNewWarning(message, Warning.OperationRedundancy);
         public static void throwNewWarning(string? message = null, Warning type = Warning.Default)
         {
+            var methodInfo = new StackTrace()?.GetFrame(1)?.GetMethod();
+            var className = methodInfo?.ReflectedType?.Name;
+            string senderInfo = $"[{className}] {methodInfo}: {type.ToString()}";
 
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine(senderInfo);
+            Console.ForegroundColor = ConsoleColor.DarkRed;
+            Console.WriteLine(message);
+        }
+        public static void Send(object message)
+        {
+            var senderInfo = new StackTrace().GetFrame(1)?.GetMethod()?.ReflectedType;
+            string sender = senderInfo != null ? senderInfo.Name : "Unknown";
+            Console.ForegroundColor = ConsoleColor.DarkGray;
+            Console.Write($"[{sender}] ");
+            Console.ForegroundColor = ConsoleColor.Gray;
+            Console.WriteLine(message);
         }
     }
 }

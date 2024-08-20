@@ -32,21 +32,21 @@ namespace Trigraphic_GameEngineV1
 
         public ElementRenderer()
         {
-            material = Material.DEFAULT;
+            _material = Material.DEFAULT;
+            _material.shader.AddElementRenderer(this);
         }
         public ElementRenderer(Material material)
         {
-            this.material = material;
+            _material = material;
+            _material.shader.AddElementRenderer(this);
         }
 
-        public override void OnLoad()
+        protected override void OnLoad()
         {
-            base.OnLoad();
             material?.shader.AddElementRenderer(this);
         }
-        public override void OnUnload()
+        protected override void OnUnload()
         {
-            base.OnUnload();
             material?.shader.RemoveElementRenderer(this);
         }
 
@@ -55,7 +55,7 @@ namespace Trigraphic_GameEngineV1
             Matrix4 modelMatrix = gameObject.ModelMatrix;
             GraphicsCore.SetModelMatrix(ref modelMatrix);
             GraphicsCore.ApplyMaterial(material);
-            Console.WriteLine("render element");
+            EngineDebugManager.Send("render element");
         }
     }
 }

@@ -11,9 +11,9 @@ namespace Trigraphic_GameEngineV1
     internal class PlayerBehaviour : Component
     {
         GameObject _cam;
-        public override void OnLoad()
+        protected override void OnLoad()
         {
-            base.OnLoad();
+
             _cam = gameObject.GetComponentInChildren<Camera>().gameObject;
             InputManager.MouseMove += InputManager_MouseMove;
             InputManager.GrabCursor();
@@ -39,9 +39,8 @@ namespace Trigraphic_GameEngineV1
             lastMouse = e.Position;
         }
 
-        public override void OnUpdate(float deltaTime)
+        protected override void OnUpdate(float deltaTime)
         {
-            base.OnUpdate(deltaTime);
             if (InputManager.GetKeyDown(Keys.Tab)) { InputManager.GrabCursor(!InputManager.CursorGrabbed); first = true; }
             if (!InputManager.CursorGrabbed) return;
 

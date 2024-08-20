@@ -15,7 +15,7 @@ namespace Trigraphic_GameEngineV1
         }
 
         float time;
-        public override void OnUpdate(float deltaTime)
+        protected override void OnUpdate(float deltaTime)
         {
             base.OnUpdate(deltaTime);
             if (_translation.HasValue) gameObject.Position += _translation.Value * deltaTime;

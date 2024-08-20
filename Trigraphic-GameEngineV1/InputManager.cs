@@ -6,11 +6,13 @@ namespace Trigraphic_GameEngineV1
 {
     internal static class InputManager
     {
-        static EngineWindow? _engineWindow;
+        static EngineWindow _engineWindow;
+        static bool _engineWindowAssigned;
         public static void EngineWindowAssign(EngineWindow instance)
         {
-            if (_engineWindow != null)
+            if (_engineWindowAssigned == true)
                 throw new InvalidOperationException("enginewindow already assigned");
+            _engineWindowAssigned = true;
             _engineWindow = instance;
         }
 

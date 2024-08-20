@@ -67,17 +67,21 @@ namespace Trigraphic_GameEngineV1
             {
                 Close();
             }
+            if (KeyboardState.IsKeyDown(Keys.Tab))
+            {
+                InputManager.GrabCursor(!InputManager.CursorGrabbed);
+            }
 
             base.OnUpdateFrame(args);
         }
 
         protected override void OnRenderFrame(FrameEventArgs args)
         {
-            Console.WriteLine("clear screen");
+            EngineDebugManager.Send("clear screen");
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
             base.OnRenderFrame(args);
             SwapBuffers();
-            Console.WriteLine("swapbuffers");
+            EngineDebugManager.Send("swapbuffers");
         }
     }
 }
