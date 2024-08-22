@@ -44,16 +44,24 @@ namespace Trigraphic_GameEngineV1
             var Cam = new GameObject(Player, new Camera());
             Cam.Position = (0, 1.8f, 0);
 
-            var Obj = new GameObject(new MeshRenderer(), new MoverBehaviour
-                ()
-                );
-            Obj.Scale = (1, 0.5f, 1);
-            Obj.Position = (0, 1, 0);
+            var Obj = new GameObject(new MeshRenderer());
+            Obj.Scale = (1, .3f, 1);
+            Obj.Position = (0, 1.3f, 0);
             var Obj0 = new GameObject(Obj, new MeshRenderer(), new MoverBehaviour
                 (rotationDirection: (0, 0, 1))
                 );
-            //Obj0.Rotation = Quaternion.FromAxisAngle(Vector3.UnitX, float.Pi/2);
             Obj0.Position = (1.5f, 0, 0);
+
+            var Obj1 = new GameObject(new MeshRenderer());
+            Obj1.Scale = (1, 1f, 1);
+            Obj1.Position = (0, 2.3f, 0);
+            var Obj10 = new GameObject(Obj1, new MeshRenderer(), new MoverBehaviour
+                (rotationDirection: (0, 0, 1))
+                );
+            Obj10.Position = (1.5f, 0, 0);
+
+
+
 
             CompositionManager.LoadSelectedComposition();
             //test code

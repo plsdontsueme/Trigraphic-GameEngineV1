@@ -25,109 +25,220 @@ namespace Trigraphic_GameEngineV1
             }
         }
 
-        public static void CreateShaderProgram(string shaderPath, out int handle)
+        public sealed class ShaderProgram : IDisposable
         {
-            string VertexShaderSource = File.ReadAllText(Path.Combine(shaderPath, "vertex.glsl"));
-            string FragmentShaderSource = File.ReadAllText(Path.Combine(shaderPath, "fragment.glsl"));
-
-            int VertexShader = GL.CreateShader(ShaderType.VertexShader);
-            GL.ShaderSource(VertexShader, VertexShaderSource);
-
-            int FragmentShader = GL.CreateShader(ShaderType.FragmentShader);
-            GL.ShaderSource(FragmentShader, FragmentShaderSource);
-
-            GL.CompileShader(VertexShader);
-
-            GL.GetShader(VertexShader, ShaderParameter.CompileStatus, out int successV);
-            if (successV == 0)
+            static class _UniformConvention
             {
-                string infoLog = GL.GetShaderInfoLog(VertexShader);
-                throw new InvalidDataException($"Error compiling Vertex Shader: {Environment.NewLine}{infoLog}");
+                public const string MATERIAL_COLOR = "material.color";
+                public const string MATERIAL_DIFFUSE = "material.diffuse";
+                public const string MATERIAL_SPECULAR = "material.specular";
+                public const string MATERIAL_SHININESS = "material.shininess";
+                public const string ENVIRONMENT_LIGHT_DIRECTION = "environmentLighting.direction";
+                public const string ENVIRONMENT_LIGHT_AMBIENT = "environmentLighting.ambient";
+                public const string ENVIRONMENT_LIGHT_DIFFUSE = "environmentLighting.diffuse";
+                public const string ENVIRONMENT_LIGHT_SPECULAR = "environmentLighting.specular";
+                public const string ENVIRONMENT_VIEWPOS = "viewPos";
+                //-the three matrices are not checked for their implementation
+                //-as they are mandatory for the engines shader format
+                public const string MATRIX_VIEW = "view";
+                public const string MATRIX_MODEL = "model";
+                public const string MATRIX_PROJECTION = "projection";
             }
 
-            GL.CompileShader(FragmentShader);
-
-            GL.GetShader(FragmentShader, ShaderParameter.CompileStatus, out int successF);
-            if (successF == 0)
+            int _handle;
+            Dictionary<string, int> _uniforms;
+            public ShaderProgram(string shaderDirectory)
             {
-                string infoLog = GL.GetShaderInfoLog(FragmentShader);
-                throw new InvalidDataException($"Error compiling Fragment Shader: {Environment.NewLine}{infoLog}");
+                #region buffer creation / loading
+                string VertexShaderSource = File.ReadAllText(Path.Combine(shaderDirectory, "vertex.glsl"));
+                string FragmentShaderSource = File.ReadAllText(Path.Combine(shaderDirectory, "fragment.glsl"));
+
+                int VertexShader = GL.CreateShader(ShaderType.VertexShader);
+                GL.ShaderSource(VertexShader, VertexShaderSource);
+
+                int FragmentShader = GL.CreateShader(ShaderType.FragmentShader);
+                GL.ShaderSource(FragmentShader, FragmentShaderSource);
+
+                GL.CompileShader(VertexShader);
+
+                GL.GetShader(VertexShader, ShaderParameter.CompileStatus, out int successV);
+                if (successV == 0)
+                {
+                    string infoLog = GL.GetShaderInfoLog(VertexShader);
+                    throw new InvalidDataException($"Error compiling Vertex Shader: {Environment.NewLine}{infoLog}");
+                }
+
+                GL.CompileShader(FragmentShader);
+
+                GL.GetShader(FragmentShader, ShaderParameter.CompileStatus, out int successF);
+                if (successF == 0)
+                {
+                    string infoLog = GL.GetShaderInfoLog(FragmentShader);
+                    throw new InvalidDataException($"Error compiling Fragment Shader: {Environment.NewLine}{infoLog}");
+                }
+
+                _handle = GL.CreateProgram();
+
+                GL.AttachShader(_handle, VertexShader);
+                GL.AttachShader(_handle, FragmentShader);
+
+                GL.LinkProgram(_handle);
+
+                GL.GetProgram(_handle, GetProgramParameterName.LinkStatus, out int success);
+                if (success == 0)
+                {
+                    string infoLog = GL.GetProgramInfoLog(_handle);
+                    throw new Exception($"Error compiling Shader Program: {Environment.NewLine}{infoLog}");
+                }
+
+                //-cleanup
+                GL.DetachShader(_handle, VertexShader);
+                GL.DetachShader(_handle, FragmentShader);
+                GL.DeleteShader(FragmentShader);
+                GL.DeleteShader(VertexShader);
+                #endregion
+
+                #region uniform management
+                _uniforms = new Dictionary<string, int>();
+                GL.GetProgram(_handle, GetProgramParameterName.ActiveUniforms, out int uniformCount);
+                for (int i = 0; i < uniformCount; i++)
+                {
+                    string key = GL.GetActiveUniform(_handle, i, out _, out _);
+                    int location = GL.GetUniformLocation(_handle, key);
+                    _uniforms.Add(key, location);
+                }
+
+                foreach (var key in _uniforms.Keys)
+                {
+                    EngineDebugManager.Send(key + " -- " + _uniforms[key]);
+                }
+
+                //GL.UseProgram(_handle);
+                if (_uniforms.ContainsKey(_UniformConvention.MATERIAL_DIFFUSE))
+                    GL.Uniform1(_uniforms[_UniformConvention.MATERIAL_DIFFUSE], 0);
+                if (_uniforms.ContainsKey(_UniformConvention.MATERIAL_SPECULAR))
+                    GL.Uniform1(_uniforms[_UniformConvention.MATERIAL_SPECULAR], 1);
+                #endregion
             }
 
-            handle = GL.CreateProgram();
+            static ShaderProgram? _usedShader;
 
-            GL.AttachShader(handle, VertexShader);
-            GL.AttachShader(handle, FragmentShader);
-
-            GL.LinkProgram(handle);
-
-            GL.GetProgram(handle, GetProgramParameterName.LinkStatus, out int success);
-            if (success == 0)
+            public void UseProgram()
             {
-                string infoLog = GL.GetProgramInfoLog(handle);
-                throw new Exception($"Error compiling Shader Program: {Environment.NewLine}{infoLog}");
+                GL.UseProgram(_handle);
+                _usedShader = this;
+            }
+            public void ApplyEnvironmentMaterial(Camera camera, EnvironmentMaterial environment)
+            {
+                if (_usedShader != this) throw new InvalidOperationException("called shader is not used");
+
+                GL.UniformMatrix4(_uniforms[_UniformConvention.MATRIX_VIEW], true, ref camera.GetViewMatrixRef());
+                GL.UniformMatrix4(_uniforms[_UniformConvention.MATRIX_PROJECTION], true, ref camera.GetProjectionMatrixRef());
+
+                if (_uniforms.ContainsKey(_UniformConvention.ENVIRONMENT_VIEWPOS))
+                    GL.Uniform3(_uniforms[_UniformConvention.ENVIRONMENT_VIEWPOS], camera.gameObject.GlobalPosition);
+
+                if (_uniforms.ContainsKey(_UniformConvention.ENVIRONMENT_LIGHT_DIRECTION))
+                    GL.Uniform3(_uniforms[_UniformConvention.ENVIRONMENT_LIGHT_DIRECTION], environment.DirectionalLightDirection);
+                if (_uniforms.ContainsKey(_UniformConvention.ENVIRONMENT_LIGHT_AMBIENT))
+                    GL.Uniform3(_uniforms[_UniformConvention.ENVIRONMENT_LIGHT_AMBIENT], environment.AmbientColor);
+                if (_uniforms.ContainsKey(_UniformConvention.ENVIRONMENT_LIGHT_DIFFUSE))
+                    GL.Uniform3(_uniforms[_UniformConvention.ENVIRONMENT_LIGHT_DIFFUSE], environment.DiffuseColor);
+                if (_uniforms.ContainsKey(_UniformConvention.ENVIRONMENT_LIGHT_SPECULAR))
+                    GL.Uniform3(_uniforms[_UniformConvention.ENVIRONMENT_LIGHT_SPECULAR], environment.SpecularColor);
+
+            }
+            public void ApplyModelTransform(ElementRenderer element)
+            {
+                if (_usedShader != this) throw new InvalidOperationException("called shader is not used");
+                //if (element.material.shader.program != this) throw new ArgumentException("argument shader mismatch");
+                
+                GL.UniformMatrix4(_uniforms[_UniformConvention.MATRIX_MODEL], true, ref element.gameObject.GetModelMatrixRef());
+
+            }
+            public void ApplyMaterial(Material material)
+            {
+                if (_usedShader != this) throw new InvalidOperationException("called shader is not used");
+                //if (material.shader.program != this) throw new ArgumentException("argument shader mismatch");
+
+                if (_uniforms.ContainsKey(_UniformConvention.MATERIAL_COLOR))
+                    GL.Uniform4(_uniforms[_UniformConvention.MATERIAL_COLOR], material.color);
+                if (_uniforms.ContainsKey(_UniformConvention.MATERIAL_DIFFUSE))
+                    _ApplyTexture(material.diffuse.Handle, TextureUnit.Texture0);
+                if (_uniforms.ContainsKey(_UniformConvention.MATERIAL_SPECULAR))
+                    _ApplyTexture(material.diffuse.Handle, TextureUnit.Texture1);
+                if (_uniforms.ContainsKey(_UniformConvention.MATERIAL_SHININESS))
+                    GL.Uniform1(_uniforms[_UniformConvention.MATERIAL_SHININESS], material.shininess);
+                
+                static void _ApplyTexture(int handle, TextureUnit textureUnit)
+                {
+                    GL.ActiveTexture(textureUnit);
+                    GL.BindTexture(TextureTarget.Texture2D, handle);
+                }
+
             }
 
-            //cleanup
-            GL.DetachShader(handle, VertexShader);
-            GL.DetachShader(handle, FragmentShader);
-            GL.DeleteShader(FragmentShader);
-            GL.DeleteShader(VertexShader);
-        }
-        public static void DeleteShaderProgram(int handle)
-        {
-            GL.DeleteProgram(handle);
-        }
-        public static class UniformConvention
-        {
-            public const string TEXTURE_DIFFUSE = "diffuse";
-            public const string MATRIX_VIEW = "view";
-            public const string MATRIX_MODEL = "model";
-            public const string MATRIX_PROJECTION = "projection";
-            public const string V3_COLOR = "color";
-        }
-        public static void GetShaderProgramUniforms(int handle, out Dictionary<string, int> locations)
-        {
-            locations = new Dictionary<string, int>();
-            GL.GetProgram(handle, GetProgramParameterName.ActiveUniforms, out int uniformCount);
-            for (int i = 0; i < uniformCount; i++)
+            #region IDisposable Support
+            bool _disposed = false;
+            void _Dispose(bool disposing)
             {
-                string key = GL.GetActiveUniform(handle, i, out _, out _);
-                int location = GL.GetUniformLocation(handle, key);
-                locations.Add(key, location);
-            }
+                if (!_disposed)
+                {
+                    if (disposing)
+                    {
+                        //-free managed resources (if any)
+                    }
 
-            foreach (var key in locations.Keys)
+                    //-free unmanaged resources
+                    GL.DeleteProgram(_handle);
+
+                    _disposed = true;
+                }
+                else EngineDebugManager.throwNewOperationRedundancyWarning("dispose wal already called");
+                EngineDebugManager.Send("dispose called");
+            }
+            public void Dispose()
             {
-                EngineDebugManager.Send(key + " -- " + locations[key]);
+                _Dispose(true);
+                GC.SuppressFinalize(this);
             }
-            if (locations.ContainsKey(UniformConvention.TEXTURE_DIFFUSE))
-                GL.Uniform1(locations[UniformConvention.TEXTURE_DIFFUSE], 0);
-        }
-        public static Shader? ActiveShader;
-        public static void UseShaderProgram(int handle, Shader shader)
-        {
-            GL.UseProgram(handle);
-            ActiveShader = shader;
-        }
-        public static void SetModelMatrix(ref Matrix4 matrix)
-        {
-            if (ActiveShader == null) throw new InvalidOperationException();
-            GL.UniformMatrix4(ActiveShader.GetUniformLocation(UniformConvention.MATRIX_MODEL), true, ref matrix);
-        }
-        public static void SetViewMatrix(ref Matrix4 matrix)
-        {
-            if (ActiveShader == null) throw new InvalidOperationException();
-            GL.UniformMatrix4(ActiveShader.GetUniformLocation(UniformConvention.MATRIX_VIEW), true, ref matrix);
-        }
-        public static void SetProjectionMatrix(ref Matrix4 matrix)
-        {
-            if (ActiveShader == null) throw new InvalidOperationException();
-            GL.UniformMatrix4(ActiveShader.GetUniformLocation(UniformConvention.MATRIX_PROJECTION), true, ref matrix);
+            ~ShaderProgram()
+            {
+                if (_disposed == false)
+                {
+                    throw new Exception("GPU Resource leak - Dispose wasnt called 0o0");
+                }
+                EngineDebugManager.Send("finalizer called");
+            }
+            #endregion
         }
 
+        #region texture
+        public static void CreateTextureBuffer(string filename, out int handle, out int width, out int height)
+        {
+            var image = _LoadImageData(filename);
+            width = image.Width;
+            height = image.Height;
 
+            handle = GL.GenTexture();
+            GL.BindTexture(TextureTarget.Texture2D, handle);
+            GL.TexImage2D(
+                TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba,
+                image.Width, image.Height, 0,
+                PixelFormat.Rgba, PixelType.UnsignedByte, image.Data
+                );
+            GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+        }
+        static ImageResult _LoadImageData(string filename)
+        {
+            //-stb loads from top-left pixel, opengl loads from  bottom-left)
+            StbImage.stbi_set_flip_vertically_on_load(1);
+            var result = ImageResult.FromStream(File.OpenRead(filename), ColorComponents.RedGreenBlueAlpha);
+            return result;
+        }
+        #endregion
 
+        #region mesh
         public static void CreateMeshBuffer(float[] vertexData, uint[] indexData,
             out int vbo, out int vao, out int ebo)
         {        
@@ -152,14 +263,21 @@ namespace Trigraphic_GameEngineV1
 
             GL.VertexAttribPointer(
                 0, 3, VertexAttribPointerType.Float, false, 
-                5 * sizeof(float), 0
+                8 * sizeof(float), 0
                 );
             GL.EnableVertexAttribArray(0);
 
-            GL.VertexAttribPointer(1, 2, VertexAttribPointerType.Float, false, 
-                5 * sizeof(float), 3 * sizeof(float)
+            GL.VertexAttribPointer(
+                1, 2, VertexAttribPointerType.Float, false, 
+                8 * sizeof(float), 3 * sizeof(float)
                 );
             GL.EnableVertexAttribArray(1);
+
+            GL.VertexAttribPointer(
+                2, 3, VertexAttribPointerType.Float, false,
+                8 * sizeof(float), 5 * sizeof(float)
+                );
+            GL.EnableVertexAttribArray(2);
         }
         public static void DeleteMeshBuffer(int vbo, int vao, int ebo)
         {
@@ -175,41 +293,6 @@ namespace Trigraphic_GameEngineV1
             GL.BindVertexArray(vao);
             GL.DrawElements(PrimitiveType.Triangles, indexLength, DrawElementsType.UnsignedInt, 0);
         }
-
-        public static void CreateTextureBuffer(string filename, out int handle, out int width, out int height)
-        {
-            var image = _LoadImageData(filename);
-            width = image.Width; 
-            height = image.Height;
-
-            handle = GL.GenTexture();
-            GL.BindTexture(TextureTarget.Texture2D, handle);
-            GL.TexImage2D(
-                TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, 
-                image.Width, image.Height, 0, 
-                PixelFormat.Rgba, PixelType.UnsignedByte, image.Data
-                );
-            GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
-        }
-        static ImageResult _LoadImageData(string filename)
-        {
-            //-stb loads from top-left pixel, opengl loads from  bottom-left)
-            StbImage.stbi_set_flip_vertically_on_load(1);
-            var result = ImageResult.FromStream(File.OpenRead(filename), ColorComponents.RedGreenBlueAlpha);
-            return result;
-        }
-        public static void ApplyTexture(int handle, TextureUnit textureUnit)
-        {
-            GL.ActiveTexture(textureUnit);
-            GL.BindTexture(TextureTarget.Texture2D, handle);
-        }
-        public static void ApplyMaterial(Material material)
-        {
-            Shader s = material.shader;
-            if (s.GetUniform(UniformConvention.TEXTURE_DIFFUSE)) 
-                material.diffuse.Apply(TextureUnit.Texture0);
-            if (s.GetUniform(UniformConvention.V3_COLOR))
-                GL.Uniform3(s.GetUniformLocation(UniformConvention.V3_COLOR), material.color);
-        }
+        #endregion
     }
 }

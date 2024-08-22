@@ -1,9 +1,4 @@
 ﻿using OpenTK.Mathematics;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Trigraphic_GameEngineV1
 {
@@ -52,9 +47,6 @@ namespace Trigraphic_GameEngineV1
 
         public virtual void RenderElement()
         {
-            Matrix4 modelMatrix = gameObject.ModelMatrix;
-            GraphicsCore.SetModelMatrix(ref modelMatrix);
-            GraphicsCore.ApplyMaterial(material);
             EngineDebugManager.Send("render element");
         }
     }

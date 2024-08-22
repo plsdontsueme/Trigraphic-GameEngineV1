@@ -12,7 +12,10 @@ namespace Trigraphic_GameEngineV1
         }
 
         public readonly Shader shader;
+
+        public Color4 color = Color4.White;
         public Texture diffuse = Texture.DEFAULT;
-        public Vector3 color = Vector3.One;
+        public Texture specular = Texture.DEFAULT;
+        public float shininess = 32f;
     }
 }

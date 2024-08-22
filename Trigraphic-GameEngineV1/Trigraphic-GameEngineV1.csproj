@@ -13,4 +13,8 @@
     <PackageReference Include="StbImageSharp" Version="2.27.14" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Rsc\Tgds\" />
+  </ItemGroup>
+
 </Project>

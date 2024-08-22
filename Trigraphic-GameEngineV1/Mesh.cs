@@ -51,6 +51,8 @@ namespace Trigraphic_GameEngineV1
 
                 _disposed = true;
             }
+            else EngineDebugManager.throwNewOperationRedundancyWarning("dispose wal already called");
+            EngineDebugManager.Send("dispose called");
         }
         public void Dispose()
         {
@@ -63,6 +65,7 @@ namespace Trigraphic_GameEngineV1
             {
                 throw new Exception("GPU Resource leak - Dispose wasnt called 0o0");
             }
+            EngineDebugManager.Send("finalizer called");
         }
         #endregion
     }

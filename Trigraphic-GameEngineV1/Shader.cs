@@ -25,31 +25,30 @@ namespace Trigraphic_GameEngineV1
             _elementRenderers.Remove(renderer);
         }
 
-        public void RenderAllElements()
+        public void RenderAllElements(EnvironmentMaterial environment)
         {
-            GraphicsCore.UseShaderProgram(_handle, this);
-            Matrix4 viewMatrix = Camera.MainCamera(cameraSlot).GetViewMatrix();
-            Matrix4 projectionMatrix = Camera.MainCamera(cameraSlot).GetProjectionMatrix();
-            GraphicsCore.SetViewMatrix(ref viewMatrix);
-            GraphicsCore.SetProjectionMatrix(ref projectionMatrix);
+            Camera? camera = Camera.MainCamera(CameraSlot);
+            if (camera == null) throw new NullReferenceException("chosen camera slot not populated");
+
+            _shaderProgram.UseProgram();
+            _shaderProgram.ApplyEnvironmentMaterial(camera, environment);
             foreach (ElementRenderer renderer in _elementRenderers)
+            {
+                _shaderProgram.ApplyModelTransform(renderer);
+                _shaderProgram.ApplyMaterial(renderer.material);
                 renderer.RenderElement();
+            }          
         }
         #endregion
 
         #region constructor logic
-        readonly int _handle;
-        Dictionary<string, int> _uniformLocations;
-        public bool GetUniform(string name) => _uniformLocations.ContainsKey(name);
-        public int GetUniformLocation(string name) => _uniformLocations[name];
-        public int cameraSlot;
+        public int CameraSlot;
 
-
+        GraphicsCore.ShaderProgram _shaderProgram;
         public Shader(string shaderDirectory, int usedCameraSlot = 0)
         {
-            cameraSlot = usedCameraSlot;
-            GraphicsCore.CreateShaderProgram(shaderDirectory, out _handle);
-            GraphicsCore.GetShaderProgramUniforms(_handle, out _uniformLocations);
+            CameraSlot = usedCameraSlot;
+            _shaderProgram = new(shaderDirectory);
         }
         #endregion
 
@@ -66,10 +65,12 @@ namespace Trigraphic_GameEngineV1
                 }
 
                 //-free unmanaged resources
-                GraphicsCore.DeleteShaderProgram(_handle);
+                _shaderProgram.Dispose();
 
                 _disposed = true;
             }
+            else EngineDebugManager.throwNewOperationRedundancyWarning("dispose wal already called");
+            EngineDebugManager.Send("dispose called");
         }
         public void Dispose()
         {
@@ -82,6 +83,7 @@ namespace Trigraphic_GameEngineV1
             {
                 throw new Exception("GPU Resource leak - Dispose wasnt called 0o0");
             }
+            EngineDebugManager.Send("finalizer called");
         }
         #endregion
     }

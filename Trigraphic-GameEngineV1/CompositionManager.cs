@@ -20,7 +20,7 @@ namespace Trigraphic_GameEngineV1
             if (_selectedComposition == null) throw new InvalidOperationException();
             foreach (Shader shader in _selectedComposition.Value.ShaderOrder)
             {
-                shader.RenderAllElements();
+                shader.RenderAllElements(_selectedComposition.Value.Environment);
             }
         }
 
@@ -48,11 +48,14 @@ namespace Trigraphic_GameEngineV1
                 RootObject = new(out Load, out Unload, out Update);
             }
             public readonly string Name;
+
             public readonly RootGameObject RootObject;
             public bool Loaded => RootObject.Loaded;
             public Action Load, Unload;
             public Action<float> Update;
+
             public Shader[] ShaderOrder;
+            public EnvironmentMaterial Environment = new EnvironmentMaterial();
         }
         static List<Composition> _compositions = new();
         static Composition? _selectedComposition;
@@ -63,6 +66,7 @@ namespace Trigraphic_GameEngineV1
                 throw new InvalidOperationException("operation cannot be made without engine initialisation");
             return _selectedComposition.Value.RootObject;
         }
+
 
         public static void AddComposition(string? name = null, params Shader[] shaderRenderOrder)
         {

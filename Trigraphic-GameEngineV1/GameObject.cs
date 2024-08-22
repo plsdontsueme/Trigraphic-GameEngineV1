@@ -1,11 +1,11 @@
 ﻿using OpenTK.Mathematics;
+using System.Reflection.Metadata;
 
 namespace Trigraphic_GameEngineV1
 {
     internal class GameObject
     {
         #region parenting logic
-        GameObject? _parent;
         List<GameObject> _children = new();
         void _AddChild(GameObject child)
         {
@@ -16,6 +16,7 @@ namespace Trigraphic_GameEngineV1
             _children.Remove(child);
         }
 
+        GameObject? _parent;
         public GameObject? Parent
         {
             get => _parent;
@@ -62,6 +63,8 @@ namespace Trigraphic_GameEngineV1
         #endregion
 
         #region transformation logic
+        private Vector3 _elementtDimensions = Vector3.One;
+
         private Vector3 _localPosition = Vector3.Zero;
         private Quaternion _localRotation = Quaternion.Identity;
         private Vector3 _localScale = Vector3.One;
@@ -70,10 +73,21 @@ namespace Trigraphic_GameEngineV1
         private Quaternion _globalRotation = Quaternion.Identity;
         private Matrix4 _globalScaleMatrix = Matrix4.Identity;
 
-        private bool _transformValid;
-        void _InvalidateTransform(int aspect = -1)
+        public Vector3 GlobalPosition => _globalPosition;
+        public Quaternion GlobalRotation => _globalRotation;
+        public Matrix4 GlobalScaleMatrix => _globalScaleMatrix;
+
+        public Vector3 Dimensions
         {
-            _transformValid = false;
+            get => _elementtDimensions;
+            set
+            {
+                if (_elementtDimensions != value)
+                {
+                    _elementtDimensions = value;
+                    _modelMatrixValid = false;
+                }
+            }
         }
 
         public Vector3 Position
@@ -113,14 +127,31 @@ namespace Trigraphic_GameEngineV1
             }
         }
 
-        public Vector3 GlobalPosition => _globalPosition;
-        public Quaternion GlobalRotation => _globalRotation;
-        public Matrix4 GlobalScaleMatrix => _globalScaleMatrix;
+        bool _transformValid;
+        bool _gPositionValid;
+        bool _gRotationValid;
+        bool _gScaleValid;
+        void _InvalidateTransform(int aspect = -1)
+        {
+            _transformValid = false;
+            _modelMatrixValid = false;
+
+            switch (aspect)
+            {
+                case 0: _gPositionValid = false; break;
+                case 1: _gRotationValid = false; break;
+                case 2: _gScaleValid = false; break;
+                case -1: _gPositionValid = false;
+                    _gRotationValid = false;
+                    _gScaleValid = false;
+                    break;
+            }
+        }
+
         Vector3 _GetGlobalScaleApproximation()
         {
             return new Vector3(_globalScaleMatrix.M11, _globalScaleMatrix.M22, _globalScaleMatrix.M33);
         }
-
         void _UpdateTransform()
         {
             if (!_transformValid)
@@ -129,26 +160,41 @@ namespace Trigraphic_GameEngineV1
                 if (_parent == null)
                 {
                     _globalPosition = _localPosition;
-                    _globalRotation = _localRotation;
+                    _globalRotation = _localRotation; 
                     _globalScaleMatrix = Matrix4.CreateScale(_localScale);
                 }
                 else
                 {
-                    _globalPosition = Vector3.Transform(_localPosition * _parent._GetGlobalScaleApproximation(), _parent._globalRotation) + _parent._globalPosition;
-                    _globalRotation = _parent._globalRotation * _localRotation;
+                    if (!_gPositionValid)
+                    {
+                        var scaledLocalPosition = Vector3.Transform(_localPosition, _parent._globalRotation);
+                        _globalPosition = scaledLocalPosition * _parent._GetGlobalScaleApproximation() + _parent._globalPosition;
+                        //if approximation proves inaccurate:
+                        //_globalPosition = Vector3.TransformPosition(scaledLocalPosition, _parent._globalScaleMatrix) + _parent._globalPosition;
+                        
+                        _gPositionValid = true;
+                    }
 
-                    Quaternion inverseRotationQuaternion = _localRotation.Inverted();
-                    //-apply the inverse rotation to the parents scale matrix
-                    Matrix4 inverseRotationMatrix = Matrix4.CreateFromQuaternion(inverseRotationQuaternion);
-                    Matrix4 correctedParentScale = inverseRotationMatrix * _parent._globalScaleMatrix;
-                    //-apply the parents scale to the child's scale
-                    Matrix4 transformedScaleMatrix = Matrix4.CreateScale(_localScale) * correctedParentScale;
-                    //-reapply the original rotation using the quaternion
-                    Matrix4 rotationMatrix = Matrix4.CreateFromQuaternion(_localRotation);
-                    _globalScaleMatrix = transformedScaleMatrix * rotationMatrix;
+                    if (!_gRotationValid)
+                    {
+                        _globalRotation = _parent._globalRotation * _localRotation;
+
+                        _gRotationValid = true;
+                        _gScaleValid = false;
+                    }
+
+                    if (!_gScaleValid)
+                    {
+                        var rotationMatrix = Matrix4.CreateFromQuaternion(_globalRotation);
+                        var inverseRotationMatrix = Matrix4.Invert(rotationMatrix);
+                        var scalingMatrix = Matrix4.CreateScale(_localScale);
+                        _globalScaleMatrix = _parent._globalScaleMatrix * inverseRotationMatrix * scalingMatrix * rotationMatrix;
+
+                        _gScaleValid = true;
+                    }
+
                 }
 
-                _UpdateModelMatrix();
                 _transformValid = true;
 
                 foreach (var child in _children)
@@ -160,12 +206,20 @@ namespace Trigraphic_GameEngineV1
         #endregion
 
         #region model matrix logic
-        public Matrix4 ModelMatrix { get; private set; }
-        void _UpdateModelMatrix()
+        Matrix4 _modelMatrix;
+        bool _modelMatrixValid;
+        public ref Matrix4 GetModelMatrixRef()
         {
-            ModelMatrix = _globalScaleMatrix
+            if (!_modelMatrixValid)
+            {
+                _modelMatrix =
+                Matrix4.CreateScale(_elementtDimensions)
                 * Matrix4.CreateFromQuaternion(_globalRotation)
+                * _globalScaleMatrix
                 * Matrix4.CreateTranslation(_globalPosition);
+                _modelMatrixValid = true;
+            }
+            return ref _modelMatrix;
         }
         #endregion
 
@@ -222,7 +276,6 @@ namespace Trigraphic_GameEngineV1
 
             return null;
         }
-
         #endregion
 
         #region event logic
