@@ -3,6 +3,7 @@ using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
+using static System.Formats.Asn1.AsnWriter;
 
 namespace Trigraphic_GameEngineV1
 {
@@ -44,21 +45,23 @@ namespace Trigraphic_GameEngineV1
             var Cam = new GameObject(Player, new Camera());
             Cam.Position = (0, 1.8f, 0);
 
-            var Obj = new GameObject(new MeshRenderer());
-            Obj.Scale = (1, .3f, 1);
-            Obj.Position = (0, 1.3f, 0);
-            var Obj0 = new GameObject(Obj, new MeshRenderer(), new MoverBehaviour
-                (rotationDirection: (0, 0, 1))
+            var CubePair = GameObject.CreatePrefab(new MeshRenderer());
+            var CubePairChild = GameObject.CreatePrefab (new MeshRenderer(), new MoverBehaviour
+                (rotationDirection: (1, 1, 1))
                 );
-            Obj0.Position = (1.5f, 0, 0);
+            CubePairChild.Parent = CubePair;
+            CubePairChild.Position = (1.5f, 0, 0);
 
-            var Obj1 = new GameObject(new MeshRenderer());
-            Obj1.Scale = (1, 1f, 1);
-            Obj1.Position = (0, 2.3f, 0);
-            var Obj10 = new GameObject(Obj1, new MeshRenderer(), new MoverBehaviour
-                (rotationDirection: (0, 0, 1))
-                );
-            Obj10.Position = (1.5f, 0, 0);
+            CubePair.InstantiateCopy().Scale = (1.0f, 0.3f, 1.0f);
+
+            var o = CubePair.InstantiateCopy();
+            o.Position = (0,4,0);
+            var o0 = CubePair.InstantiateCopy();
+            o0.Position = (1.5f,0,0);
+            o0.Parent = o.Children[0];
+            var o1 = CubePair.InstantiateCopy();
+            o1.Position = (1.5f, 0, 0);
+            o1.Parent = o0.Children[0];
 
 
 

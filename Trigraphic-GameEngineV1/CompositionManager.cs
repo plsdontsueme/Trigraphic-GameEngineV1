@@ -50,7 +50,7 @@ namespace Trigraphic_GameEngineV1
             public readonly string Name;
 
             public readonly RootGameObject RootObject;
-            public bool Loaded => RootObject.Loaded;
+            public bool Loaded => RootObject.isLoaded;
             public Action Load, Unload;
             public Action<float> Update;
 

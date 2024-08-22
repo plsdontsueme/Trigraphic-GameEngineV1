@@ -1,4 +1,5 @@
-﻿using System;
+﻿using OpenTK.Mathematics;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,7 +9,8 @@ namespace Trigraphic_GameEngineV1
 {
     internal sealed class RootGameObject : GameObject
     {
-        public RootGameObject(out Action rootLoad, out Action rootUnload, out Action<float> rootUpdate) : base(null, new Component[0])
+        public RootGameObject(out Action rootLoad, out Action rootUnload, out Action<float> rootUpdate) 
+            : base([],null)
         {
             rootLoad = _Load;
             rootUnload = _Unload;
@@ -25,10 +27,17 @@ namespace Trigraphic_GameEngineV1
         {
             throw new InvalidOperationException("rootgameobject cannot have components");
         }
-
         public new void RemoveComponent(Component component)
         {
             throw new InvalidOperationException("rootgameobject cannot have components");
+        }
+        public new T? GetComponent<T>() where T : Component
+        {
+            throw new InvalidOperationException("rootgameobject cannot have components");
+        }
+        public new ref Matrix4 GetModelMatrixRef()
+        {
+            throw new InvalidOperationException("rootgameobject cannot have render element");
         }
         #endregion
     }
