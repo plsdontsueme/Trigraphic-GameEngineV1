@@ -45,25 +45,20 @@ namespace Trigraphic_GameEngineV1
             var Cam = new GameObject(Player, new Camera());
             Cam.Position = (0, 1.8f, 0);
 
-            var CubePair = GameObject.CreatePrefab(new MeshRenderer());
-            var CubePairChild = GameObject.CreatePrefab (new MeshRenderer(), new MoverBehaviour
-                (rotationDirection: (1, 1, 1))
-                );
-            CubePairChild.Parent = CubePair;
-            CubePairChild.Position = (1.5f, 0, 0);
+            var eaglePrefab = GameObject.ImportTgxAsPrefab(
+                 Path.Combine("...//..//..//..//..//Rsc//Files3d", "eagle.tgx"), Shader.DEFAULT);
+            eaglePrefab.Scale *= .1f;
+            eaglePrefab.Instantiate();
 
-            CubePair.InstantiateCopy().Scale = (1.0f, 0.3f, 1.0f);
-
-            var o = CubePair.InstantiateCopy();
-            o.Position = (0,4,0);
-            var o0 = CubePair.InstantiateCopy();
-            o0.Position = (1.5f,0,0);
-            o0.Parent = o.Children[0];
-            var o1 = CubePair.InstantiateCopy();
-            o1.Position = (1.5f, 0, 0);
-            o1.Parent = o0.Children[0];
-
-
+            var primitivesPrefab = GameObject.ImportTgxAsPrefab(
+                Path.Combine("...//..//..//..//..//Rsc//Files3d", "objblender_primitives.tgx"), Shader.DEFAULT);
+            float offset = 0.0f;
+            foreach (var c in primitivesPrefab.Children)
+            {
+                c.Position = (offset, 0, 0);
+                offset += 2.5f;
+            }
+            primitivesPrefab.Instantiate();
 
 
             CompositionManager.LoadSelectedComposition();

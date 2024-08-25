@@ -9,10 +9,6 @@ namespace Trigraphic_GameEngineV1
     internal class MeshRenderer : ElementRenderer
     {
         public Mesh mesh;
-        public MeshRenderer()
-        {
-            this.mesh = Mesh.PRIMITIVE_CUBE;
-        }
         public MeshRenderer(Mesh mesh)
         {
             this.mesh = mesh;

@@ -49,6 +49,8 @@ namespace Trigraphic_GameEngineV1
             if (InputManager.GetKey(Keys.S)) movement.Z += 1;
             if (InputManager.GetKey(Keys.A)) movement.X -= 1;
             if (InputManager.GetKey(Keys.D)) movement.X += 1;
+            if (InputManager.GetKey(Keys.LeftShift)) movement.Y -= 1;
+            if (InputManager.GetKey(Keys.Space)) movement.Y += 1;
             if (movement.Length == 0) return;
             movement.Normalize();
             gameObject.Position += (gameObject.Rotation * movement * deltaTime * 3);

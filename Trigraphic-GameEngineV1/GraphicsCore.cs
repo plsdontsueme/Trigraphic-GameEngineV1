@@ -1,7 +1,6 @@
 ﻿using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 using StbImageSharp;
-using System.Reflection.Metadata;
 
 namespace Trigraphic_GameEngineV1
 {
@@ -162,13 +161,13 @@ namespace Trigraphic_GameEngineV1
                 //if (material.shader.program != this) throw new ArgumentException("argument shader mismatch");
 
                 if (_uniforms.ContainsKey(_UniformConvention.MATERIAL_COLOR))
-                    GL.Uniform4(_uniforms[_UniformConvention.MATERIAL_COLOR], material.color);
+                    GL.Uniform4(_uniforms[_UniformConvention.MATERIAL_COLOR], material.Color);
                 if (_uniforms.ContainsKey(_UniformConvention.MATERIAL_DIFFUSE))
-                    _ApplyTexture(material.diffuse.Handle, TextureUnit.Texture0);
+                    _ApplyTexture(material.DiffuseMap.Handle, TextureUnit.Texture0);
                 if (_uniforms.ContainsKey(_UniformConvention.MATERIAL_SPECULAR))
-                    _ApplyTexture(material.diffuse.Handle, TextureUnit.Texture1);
+                    _ApplyTexture(material.DiffuseMap.Handle, TextureUnit.Texture1);
                 if (_uniforms.ContainsKey(_UniformConvention.MATERIAL_SHININESS))
-                    GL.Uniform1(_uniforms[_UniformConvention.MATERIAL_SHININESS], material.shininess);
+                    GL.Uniform1(_uniforms[_UniformConvention.MATERIAL_SHININESS], material.Shininess);
                 
                 static void _ApplyTexture(int handle, TextureUnit textureUnit)
                 {
@@ -214,12 +213,8 @@ namespace Trigraphic_GameEngineV1
         }
 
         #region texture
-        public static void CreateTextureBuffer(string filename, out int handle, out int width, out int height)
+        public static void CreateTextureBuffer(ImageResult image, out int handle)
         {
-            var image = _LoadImageData(filename);
-            width = image.Width;
-            height = image.Height;
-
             handle = GL.GenTexture();
             GL.BindTexture(TextureTarget.Texture2D, handle);
             GL.TexImage2D(
@@ -228,13 +223,6 @@ namespace Trigraphic_GameEngineV1
                 PixelFormat.Rgba, PixelType.UnsignedByte, image.Data
                 );
             GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
-        }
-        static ImageResult _LoadImageData(string filename)
-        {
-            //-stb loads from top-left pixel, opengl loads from  bottom-left)
-            StbImage.stbi_set_flip_vertically_on_load(1);
-            var result = ImageResult.FromStream(File.OpenRead(filename), ColorComponents.RedGreenBlueAlpha);
-            return result;
         }
         #endregion
 

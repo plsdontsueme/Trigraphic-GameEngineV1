@@ -1,4 +1,5 @@
-﻿using System;
+﻿using StbImageSharp;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,13 +9,25 @@ namespace Trigraphic_GameEngineV1
 {
     internal sealed class Texture
     {
-        public static readonly Texture DEFAULT = new("...//..//..//..//..//Rsc//Common//Textures//uvcheck1k.jpg");
-
         public readonly int Handle;
         int _width, _height;
         public Texture(string filename)
         {
-            GraphicsCore.CreateTextureBuffer(filename, out Handle, out _width, out _height);
+            //-stb loads from top-left pixel, opengl loads from  bottom-left)
+            StbImage.stbi_set_flip_vertically_on_load(1);
+            var image = ImageResult.FromStream(File.OpenRead(filename), ColorComponents.RedGreenBlueAlpha);
+            
+            _width = image.Width;
+            _height = image.Height;
+
+            GraphicsCore.CreateTextureBuffer(image, out Handle);
+        }
+        public Texture(ImageResult image)
+        {
+            _width = image.Width;
+            _height = image.Height;
+
+            GraphicsCore.CreateTextureBuffer(image, out Handle);
         }
     }
 }

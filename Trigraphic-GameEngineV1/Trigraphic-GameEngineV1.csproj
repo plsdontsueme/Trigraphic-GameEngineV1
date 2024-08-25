@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Rsc\Tgds\" />
+    <Folder Include="Rsc\Common\Primitives\" />
   </ItemGroup>
 
 </Project>

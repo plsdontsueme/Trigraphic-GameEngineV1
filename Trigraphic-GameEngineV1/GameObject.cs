@@ -1,4 +1,5 @@
 ﻿using OpenTK.Mathematics;
+using StbImageSharp;
 using System.Collections.ObjectModel;
 
 namespace Trigraphic_GameEngineV1
@@ -29,8 +30,8 @@ namespace Trigraphic_GameEngineV1
                 if (_parent != value)
                 {
                     if (isPrefab != value.isPrefab) throw new InvalidOperationException("non prefabs and prefabs cannot mix in the hirarchy");
-                    if (_InquireThePresenceOfAParticularInstanceOfTheGameObjectClassAmongOnesOwnSubordinates(value))
-                        throw new InvalidOperationException("a child cannot be the parent of their own parent");
+                    if (_IsThisOrChild(value))
+                        throw new InvalidOperationException("a child cannot be the its own or parent of their own parent");
                     _parent?._RemoveChild(this);
                     _parent = value;
                     _parent._AddChild(this);
@@ -47,12 +48,12 @@ namespace Trigraphic_GameEngineV1
                 }
             }
         }
-        bool _InquireThePresenceOfAParticularInstanceOfTheGameObjectClassAmongOnesOwnSubordinates(GameObject subject)
+        bool _IsThisOrChild(GameObject subject)
         {
             if (subject == this) return true;
             foreach (GameObject child in _children)
             {
-                if (child._InquireThePresenceOfAParticularInstanceOfTheGameObjectClassAmongOnesOwnSubordinates(subject)) 
+                if (child._IsThisOrChild(subject)) 
                     return true;
             }
             return false;
@@ -430,6 +431,180 @@ namespace Trigraphic_GameEngineV1
             prefabCopy.Parent = parent;
 
             return prefabCopy;
+        }
+        #endregion
+
+        #region tgx import
+        public static GameObject ImportTgxAsPrefab(string filePath, Shader shader)
+        {
+            var rootObjects = ImportTgxSceneAsPrefabs(filePath, shader);
+            if (rootObjects.Count == 1) return rootObjects[0];
+            else
+            {
+                GameObject root = CreatePrefab();
+                foreach (var child in rootObjects)
+                {
+                    child.Parent = root;
+                }
+                return root;
+            }
+        }
+        public static List<GameObject> ImportTgxSceneAsPrefabs(string filePath, Shader shader)
+        {
+            if (!new FileInfo(filePath).Extension.Equals(".tgx"))
+                throw new ArgumentException("file is not of the TGX-Format");
+
+            var byteData = File.ReadAllBytes(filePath);
+
+            int offset = 0;
+
+            #region read functions
+            bool ReadBool()
+            {
+                bool value = BitConverter.ToBoolean(byteData, offset);
+                offset += sizeof(bool);
+                return value;
+            }
+            int ReadInt()
+            {
+                int value = BitConverter.ToInt32(byteData, offset);
+                offset += sizeof(int);
+                return value;
+            }
+            float ReadFloat()
+            {
+                float value = BitConverter.ToSingle(byteData, offset);
+                offset += sizeof(float);
+                return value;
+            }
+            Vector3 ReadVector()
+            {
+                float x = ReadFloat();
+                float y = ReadFloat();
+                float z = ReadFloat();
+                return new Vector3(x, y, z);
+            }
+            Quaternion ReadQuaternion()
+            {
+                float w = ReadFloat();
+                float x = ReadFloat();
+                float y = ReadFloat();
+                float z = ReadFloat();
+                return new Quaternion(x, y, z, w);
+            }
+            ImageResult? ReadImage()
+            {
+                bool hasImage = ReadBool();
+                if (!hasImage) return null;
+
+                int width = ReadInt();
+                int height = ReadInt();
+                int length = ReadInt();
+
+                byte[] imageData = new byte[length];
+                Array.Copy(byteData, offset, imageData, 0, length);
+                offset += length;
+
+                return new ImageResult
+                {
+                    Width = width,
+                    Height = height,
+                    Data = imageData
+                };
+            }
+            #endregion
+
+            // Begin reading data
+            float versionNumber = ReadFloat();
+            if (versionNumber != 1.0f)
+                throw new InvalidDataException("incompatible version of the TGX-Format");
+
+            int materialCount = ReadInt();
+            int meshCount = ReadInt();
+            int nodeCount = ReadInt();
+
+            Material[] materials = new Material[materialCount];
+            Mesh[] meshes = new Mesh[meshCount];
+            int[] meshMaterialIndices = new int[meshCount];
+            GameObject[] objects = new GameObject[nodeCount];
+            List<GameObject> rootObjects = new List<GameObject>();
+
+            for (int i = 0; i < materialCount; i++)
+            {
+                var diffuseMap = ReadImage();
+                var specularMap = ReadImage();
+                float shininess = ReadFloat();
+
+                materials[i] = new Material(shader)
+                {
+                    DiffuseMap = diffuseMap == null
+                     ? Material.DEFAULT.DiffuseMap
+                     : new Texture(diffuseMap),
+                    SpecularMap = specularMap == null
+                     ? Material.DEFAULT.SpecularMap
+                     : new Texture(specularMap),
+                    Shininess = shininess > 0 
+                     ? shininess 
+                     : Material.DEFAULT.Shininess
+                };
+            }
+
+            for (int i = 0; i < meshCount; i++)
+            {
+                int materialIndex = ReadInt();
+                int vertexElementCount = ReadInt();
+                int indexCount = ReadInt();
+
+                float[] vertexData = new float[vertexElementCount];
+                Buffer.BlockCopy(byteData, offset, vertexData, 0, vertexElementCount * sizeof(float));
+                offset += vertexElementCount * sizeof(float);
+
+                uint[] indexData = new uint[indexCount];
+                Buffer.BlockCopy(byteData, offset, indexData, 0, indexCount * sizeof(uint));
+                offset += indexCount * sizeof(uint);
+
+                meshes[i] = new Mesh(vertexData, indexData);
+                meshMaterialIndices[i] = materialIndex;
+            }
+
+            for (int i = 0; i < nodeCount; i++)
+            {
+                bool hasParent = ReadBool();
+                GameObject? parent;
+
+                if (hasParent)
+                {
+                    int parentIndex = ReadInt();
+                    parent = objects[parentIndex];
+                }
+                else parent = null;
+
+                Vector3 position = ReadVector();
+                Quaternion rotation = ReadQuaternion();
+                Vector3 scale = ReadVector();
+
+                int attachedMeshesCount = ReadInt();
+                MeshRenderer[] meshRenderers = new MeshRenderer[attachedMeshesCount];
+
+                for (int mi = 0; mi < attachedMeshesCount; mi++)
+                {
+                    int meshIndex = ReadInt();
+                    meshRenderers[mi] = new MeshRenderer(
+                        meshes[meshIndex],
+                        materials[meshMaterialIndices[meshIndex]]
+                        );
+                }
+
+                GameObject @object = CreatePrefab(meshRenderers);
+                @object._localPosition = position;
+                @object._localRotation = rotation;
+                @object._localScale = scale;
+                if (parent == null) rootObjects.Add(@object);
+                else @object.Parent = parent;
+                objects[i] = @object;
+            }
+
+            return rootObjects;
         }
         #endregion
     }
