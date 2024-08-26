@@ -55,7 +55,7 @@ namespace Trigraphic_GameEngineV1
             public Action<float> Update;
 
             public Shader[] ShaderOrder;
-            public EnvironmentMaterial Environment = new EnvironmentMaterial();
+            public EnvironmentMaterial Environment;
         }
         static List<Composition> _compositions = new();
         static Composition? _selectedComposition;
@@ -68,16 +68,15 @@ namespace Trigraphic_GameEngineV1
         }
 
 
-        public static void AddComposition(string? name = null, params Shader[] shaderRenderOrder)
+        public static void AddComposition(string name, EnvironmentMaterial environment, params Shader[] shaderRenderOrder)
         {
-            if (string.IsNullOrEmpty(name))
-                name = "NewScene" + _compositions.Count;
-
             if (_compositions.FindIndex(x => x.Name == name) != -1)
                 throw new Exception("composition name not unique");
 
-            if (shaderRenderOrder.Length <= 0) shaderRenderOrder = [Shader.DEFAULT];
-            _compositions.Add(new Composition(name,shaderRenderOrder));
+            if (shaderRenderOrder.Length == 0)
+                throw new ArgumentException("a composition must contain shaders in its render order");
+
+            _compositions.Add(new Composition(name, shaderRenderOrder) { Environment = environment });
         }
         public static void RemoveComposition(string name)
         {

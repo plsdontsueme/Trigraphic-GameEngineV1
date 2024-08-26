@@ -32,11 +32,31 @@ namespace Trigraphic_GameEngineV1
                 public const string MATERIAL_DIFFUSE = "material.diffuse";
                 public const string MATERIAL_SPECULAR = "material.specular";
                 public const string MATERIAL_SHININESS = "material.shininess";
-                public const string ENVIRONMENT_LIGHT_DIRECTION = "environmentLighting.direction";
-                public const string ENVIRONMENT_LIGHT_AMBIENT = "environmentLighting.ambient";
-                public const string ENVIRONMENT_LIGHT_DIFFUSE = "environmentLighting.diffuse";
-                public const string ENVIRONMENT_LIGHT_SPECULAR = "environmentLighting.specular";
-                public const string ENVIRONMENT_VIEWPOS = "viewPos";
+
+                public const string VIEWPOS = "viewPos";
+
+                public const string DIRLIGHT_DIRECTION = "dirLight.direction";
+                public const string DIRLIGHT_AMBIENT = "dirLight.ambient";
+                public const string DIRLIGHT_DIFFUSE = "dirLight.diffuse";
+                public const string DIRLIGHT_SPECULAR = "dirLight.specular";
+
+                public const string POINTLIGHT_COUNT = "numPointLights";
+                public const string POINTLIGHT_LIST = "pointLights[";
+
+                public const string SPOTLIGHT_COUNT = "numSpotLights";
+                public const string SPOTLIGHT_LIST = "spotLights[";
+                public const string SPOTLIGHT_DIRECTION = "].direction";
+                public const string SPOTLIGHT_CUTOFF = "].cutOff";
+                public const string SPOTLIGHT_OUTERCUTOFF = "].outerCutOff";
+
+                public const string LISTLIGHT_POSITION = "].position";
+                public const string LISTLIGHT_CONSTANT = "].constant";
+                public const string LISTLIGHT_LINEAR = "].linear";
+                public const string LISTLIGHT_QUADRATIC = "].quadratic";
+                public const string LISTLIGHT_AMBIENT = "].ambient";
+                public const string LISTLIGHT_DIFFUSE = "].diffuse";
+                public const string LISTLIGHT_SPECULAR = "].specular";
+
                 //-the three matrices are not checked for their implementation
                 //-as they are mandatory for the engines shader format
                 public const string MATRIX_VIEW = "view";
@@ -107,6 +127,7 @@ namespace Trigraphic_GameEngineV1
                     _uniforms.Add(key, location);
                 }
 
+                EngineDebugManager.Send("/////////////////");
                 foreach (var key in _uniforms.Keys)
                 {
                     EngineDebugManager.Send(key + " -- " + _uniforms[key]);
@@ -134,18 +155,55 @@ namespace Trigraphic_GameEngineV1
                 GL.UniformMatrix4(_uniforms[_UniformConvention.MATRIX_VIEW], true, ref camera.GetViewMatrixRef());
                 GL.UniformMatrix4(_uniforms[_UniformConvention.MATRIX_PROJECTION], true, ref camera.GetProjectionMatrixRef());
 
-                if (_uniforms.ContainsKey(_UniformConvention.ENVIRONMENT_VIEWPOS))
-                    GL.Uniform3(_uniforms[_UniformConvention.ENVIRONMENT_VIEWPOS], camera.gameObject.GlobalPosition);
+                if (_uniforms.ContainsKey(_UniformConvention.VIEWPOS))
+                    GL.Uniform3(_uniforms[_UniformConvention.VIEWPOS], camera.gameObject.GlobalPosition);
 
-                if (_uniforms.ContainsKey(_UniformConvention.ENVIRONMENT_LIGHT_DIRECTION))
-                    GL.Uniform3(_uniforms[_UniformConvention.ENVIRONMENT_LIGHT_DIRECTION], environment.DirectionalLightDirection);
-                if (_uniforms.ContainsKey(_UniformConvention.ENVIRONMENT_LIGHT_AMBIENT))
-                    GL.Uniform3(_uniforms[_UniformConvention.ENVIRONMENT_LIGHT_AMBIENT], environment.AmbientColor);
-                if (_uniforms.ContainsKey(_UniformConvention.ENVIRONMENT_LIGHT_DIFFUSE))
-                    GL.Uniform3(_uniforms[_UniformConvention.ENVIRONMENT_LIGHT_DIFFUSE], environment.DiffuseColor);
-                if (_uniforms.ContainsKey(_UniformConvention.ENVIRONMENT_LIGHT_SPECULAR))
-                    GL.Uniform3(_uniforms[_UniformConvention.ENVIRONMENT_LIGHT_SPECULAR], environment.SpecularColor);
+                if (_uniforms.ContainsKey(_UniformConvention.DIRLIGHT_DIRECTION))
+                    GL.Uniform3(_uniforms[_UniformConvention.DIRLIGHT_DIRECTION], environment.DirLightDirection);
+                if (_uniforms.ContainsKey(_UniformConvention.DIRLIGHT_AMBIENT))
+                    GL.Uniform3(_uniforms[_UniformConvention.DIRLIGHT_AMBIENT], environment.Ambient);
+                if (_uniforms.ContainsKey(_UniformConvention.DIRLIGHT_DIFFUSE))
+                    GL.Uniform3(_uniforms[_UniformConvention.DIRLIGHT_DIFFUSE], environment.Diffuse);
+                if (_uniforms.ContainsKey(_UniformConvention.DIRLIGHT_SPECULAR))
+                    GL.Uniform3(_uniforms[_UniformConvention.DIRLIGHT_SPECULAR], environment.Specular);
 
+                //-pointLights
+                if (_uniforms.ContainsKey(_UniformConvention.POINTLIGHT_COUNT))
+                {
+                    GL.Uniform1(_uniforms[_UniformConvention.POINTLIGHT_COUNT], PointLight.PointLights.Count);
+                    for (int i =  0; i < PointLight.PointLights.Count; i++)
+                    {
+                        var light = PointLight.PointLights[i];
+                        string uniformBase = _UniformConvention.POINTLIGHT_LIST + i;
+                        GL.Uniform3(_uniforms[uniformBase + _UniformConvention.LISTLIGHT_POSITION], light.gameObject.GlobalPosition);
+                        GL.Uniform1(_uniforms[uniformBase + _UniformConvention.LISTLIGHT_CONSTANT], light.Constant);
+                        GL.Uniform1(_uniforms[uniformBase + _UniformConvention.LISTLIGHT_LINEAR], light.Linear);
+                        GL.Uniform1(_uniforms[uniformBase + _UniformConvention.LISTLIGHT_QUADRATIC], light.Quadratic);
+                        GL.Uniform3(_uniforms[uniformBase + _UniformConvention.LISTLIGHT_AMBIENT], light.Ambient);
+                        GL.Uniform3(_uniforms[uniformBase + _UniformConvention.LISTLIGHT_DIFFUSE], light.Diffuse);
+                        GL.Uniform3(_uniforms[uniformBase + _UniformConvention.LISTLIGHT_SPECULAR], light.Specular);
+                    }
+                }
+                //-spotLights
+                if (_uniforms.ContainsKey(_UniformConvention.SPOTLIGHT_COUNT))
+                {
+                    GL.Uniform1(_uniforms[_UniformConvention.SPOTLIGHT_COUNT], SpotLight.SpotLights.Count);
+                    for (int i = 0; i < SpotLight.SpotLights.Count; i++)
+                    {
+                        var light = SpotLight.SpotLights[i];
+                        string uniformBase = _UniformConvention.SPOTLIGHT_LIST + i;
+                        GL.Uniform3(_uniforms[uniformBase + _UniformConvention.LISTLIGHT_POSITION], light.gameObject.GlobalPosition);
+                        GL.Uniform3(_uniforms[uniformBase + _UniformConvention.SPOTLIGHT_DIRECTION], light.gameObject.GlobalRotation * -Vector3.UnitY);
+                        GL.Uniform1(_uniforms[uniformBase + _UniformConvention.SPOTLIGHT_CUTOFF], light.Phi_cutoff);
+                        GL.Uniform1(_uniforms[uniformBase + _UniformConvention.SPOTLIGHT_OUTERCUTOFF], light.Gamma_outercutoff);
+                        GL.Uniform1(_uniforms[uniformBase + _UniformConvention.LISTLIGHT_CONSTANT], light.Constant);
+                        GL.Uniform1(_uniforms[uniformBase + _UniformConvention.LISTLIGHT_LINEAR], light.Linear);
+                        GL.Uniform1(_uniforms[uniformBase + _UniformConvention.LISTLIGHT_QUADRATIC], light.Quadratic);
+                        GL.Uniform3(_uniforms[uniformBase + _UniformConvention.LISTLIGHT_AMBIENT], light.Ambient);
+                        GL.Uniform3(_uniforms[uniformBase + _UniformConvention.LISTLIGHT_DIFFUSE], light.Diffuse);
+                        GL.Uniform3(_uniforms[uniformBase + _UniformConvention.LISTLIGHT_SPECULAR], light.Specular);
+                    }
+                }
             }
             public void ApplyModelTransform(ElementRenderer element)
             {

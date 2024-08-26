@@ -3,6 +3,7 @@ namespace Trigraphic_GameEngineV1
 {
     internal class Component
     {
+        protected Component() { }
         public GameObject gameObject {  get; private set; }
 
         #region assignment logic
@@ -33,7 +34,7 @@ namespace Trigraphic_GameEngineV1
         {
             if (!gameObject.isLoaded) throw new InvalidOperationException("component of an unloaded gameobject cannot be loaded");
             if (_isLoaded)
-                EngineDebugManager.throwNewOperationRedundancyWarning("component already loaded");
+                throw new InvalidOperationException("component already loaded");
             _isLoaded = true;
             OnLoad();
         }
@@ -41,7 +42,7 @@ namespace Trigraphic_GameEngineV1
         {
             if (!gameObject.isLoaded) throw new InvalidOperationException("component of an unloaded gameobject cannot be unloaded");
             if (!_isLoaded)
-                EngineDebugManager.throwNewOperationRedundancyWarning("component already unloaded");
+                throw new InvalidOperationException("component already unloaded");
             _isLoaded = false;
             OnUnload();
         }

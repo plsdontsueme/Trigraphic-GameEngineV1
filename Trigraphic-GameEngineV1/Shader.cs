@@ -6,8 +6,6 @@ namespace Trigraphic_GameEngineV1
 {
     internal sealed class Shader : IDisposable
     {
-        public static readonly Shader DEFAULT = new("...//..//..//..//..//Rsc//Common//Shaders//DefaultShader");
-
         #region renderer logic
         List<ElementRenderer> _elementRenderers = new();
         public void AddElementRenderer(ElementRenderer renderer)

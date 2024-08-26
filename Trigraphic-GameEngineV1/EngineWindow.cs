@@ -3,7 +3,6 @@ using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
-using static System.Formats.Asn1.AsnWriter;
 
 namespace Trigraphic_GameEngineV1
 {
@@ -37,21 +36,37 @@ namespace Trigraphic_GameEngineV1
             IsVisible = true;
 
             //test code
-            CompositionManager.AddComposition();
+            CompositionManager.AddComposition(
+                "main",
+                new EnvironmentMaterial(Color4.Black),
+                ResourceManager.DEFAULT_SHADER,
+                ResourceManager.DEFAULT_SHADER_LIGHTSOURCE
+                );
             CompositionManager.SelectComposition();
 
             var Player = new GameObject(new PlayerBehaviour());
             Player.Position = (0, 0, 6);
             var Cam = new GameObject(Player, new Camera());
             Cam.Position = (0, 1.8f, 0);
+            var Headlight = new GameObject(Cam, new SpotLight(Color4.White));
+            Headlight.Position = (0, 0.1f, -0.1f);
+            Headlight.Rotation = Quaternion.FromEulerAngles(float.Pi/2, 0, 0);
+            Headlight.Dimensions = (0.1f, 0.1f, 0.1f);
 
-            var eaglePrefab = GameObject.ImportTgxAsPrefab(
-                 Path.Combine("...//..//..//..//..//Rsc//Files3d", "eagle.tgx"), Shader.DEFAULT);
+            var spotlight = new GameObject(new SpotLight(Color4.Red) { SmoothingAngleDeg = 1f } );
+            spotlight.Position = (0, 3, 0);
+
+            var pointLight = new GameObject(new PointLight(Color4.Yellow));
+            pointLight.Position = (9, 0.4f, 0);
+
+
+            var eaglePrefab = ResourceManager.ImportTgxPrefab(
+                 Path.Combine("...//..//..//..//..//Rsc//Files3d", "eagle.tgx"), ResourceManager.DEFAULT_SHADER);
             eaglePrefab.Scale *= .1f;
             eaglePrefab.Instantiate();
 
-            var primitivesPrefab = GameObject.ImportTgxAsPrefab(
-                Path.Combine("...//..//..//..//..//Rsc//Files3d", "objblender_primitives.tgx"), Shader.DEFAULT);
+            var primitivesPrefab = ResourceManager.ImportTgxPrefab(
+                Path.Combine("...//..//..//..//..//Rsc//Files3d", "objblender_primitives.tgx"), ResourceManager.DEFAULT_SHADER);
             float offset = 0.0f;
             foreach (var c in primitivesPrefab.Children)
             {

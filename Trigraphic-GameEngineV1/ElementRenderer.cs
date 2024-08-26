@@ -25,15 +25,13 @@ namespace Trigraphic_GameEngineV1
             }
         }
 
-        public ElementRenderer()
+        protected ElementRenderer()
         {
-            _material = Material.DEFAULT;
-            if(_isLoaded) _material.shader.AddElementRenderer(this);
+            _material = ResourceManager.DEFAULT_MATERIAL;
         }
-        public ElementRenderer(Material material)
+        protected ElementRenderer(Material material)
         {
             _material = material;
-            if (_isLoaded) _material.shader.AddElementRenderer(this);
         }
 
         protected override void OnLoad()
