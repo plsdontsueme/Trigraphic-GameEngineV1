@@ -370,6 +370,12 @@ namespace Trigraphic_GameEngineV1
             prefab.isPrefab = true;
             return prefab;
         }
+        public static GameObject CreatePrefab(GameObject? parent, params Component[] components)
+        {
+            var prefab = CreatePrefab(components);
+            prefab.Parent = parent;
+            return prefab;
+        }
         void _RemovePrefabLabel()
         {
             isPrefab = false;

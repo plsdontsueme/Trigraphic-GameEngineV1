@@ -38,42 +38,51 @@ namespace Trigraphic_GameEngineV1
             //test code
             CompositionManager.AddComposition(
                 "main",
-                new EnvironmentMaterial(Color4.Black),
-                ResourceManager.DEFAULT_SHADER,
+                new EnvironmentMaterial(Color4.White),
+                ResourceManager.DEFAULT_SHADER_LIT,
+                ResourceManager.DEFAULT_SHADER_UNLIT,
                 ResourceManager.DEFAULT_SHADER_LIGHTSOURCE
                 );
             CompositionManager.SelectComposition();
 
-            var Player = new GameObject(new PlayerBehaviour());
+            var uiCam = new GameObject(new Camera(1, true));
+            ResourceManager.DEFAULT_SHADER_UNLIT.CameraSlot = 1;
+            var Text = new GameObject(new TextRenderer());
+            Text.Position = (-12, 10, 0);
+
+            var Player = GameObject.CreatePrefab(new PlayerBehaviour(Text.GetComponent<TextRenderer>()));
             Player.Position = (0, 0, 6);
-            var Cam = new GameObject(Player, new Camera());
+            var Cam = GameObject.CreatePrefab(Player, new Camera());
             Cam.Position = (0, 1.8f, 0);
-            var Headlight = new GameObject(Cam, new SpotLight(Color4.White));
+            var Headlight = GameObject.CreatePrefab(Cam, new SpotLight());
             Headlight.Position = (0, 0.1f, -0.1f);
             Headlight.Rotation = Quaternion.FromEulerAngles(float.Pi/2, 0, 0);
             Headlight.Dimensions = (0.1f, 0.1f, 0.1f);
+            Player.Instantiate();
 
-            var spotlight = new GameObject(new SpotLight(Color4.Red) { SmoothingAngleDeg = 1f } );
+            var lightingScene = new GameObject();
+            lightingScene.Position = (0, 0, 0);
+
+            var spotlight = new GameObject(lightingScene, new SpotLight(Color4.Red) { SmoothingAngleDeg = 1f } );
             spotlight.Position = (0, 3, 0);
 
-            var pointLight = new GameObject(new PointLight(Color4.Yellow));
+            var pointLight = new GameObject(lightingScene, new PointLight(Color4.Yellow));
             pointLight.Position = (9, 0.4f, 0);
 
-
             var eaglePrefab = ResourceManager.ImportTgxPrefab(
-                 Path.Combine("...//..//..//..//..//Rsc//Files3d", "eagle.tgx"), ResourceManager.DEFAULT_SHADER);
+                 Path.Combine("...//..//..//..//..//Rsc//Files3d", "eagle.tgx"), ResourceManager.DEFAULT_SHADER_LIT);
             eaglePrefab.Scale *= .1f;
-            eaglePrefab.Instantiate();
+            eaglePrefab.Instantiate(lightingScene);
 
             var primitivesPrefab = ResourceManager.ImportTgxPrefab(
-                Path.Combine("...//..//..//..//..//Rsc//Files3d", "objblender_primitives.tgx"), ResourceManager.DEFAULT_SHADER);
+                Path.Combine("...//..//..//..//..//Rsc//Files3d", "objblender_primitives.tgx"), ResourceManager.DEFAULT_SHADER_LIT);
             float offset = 0.0f;
             foreach (var c in primitivesPrefab.Children)
             {
                 c.Position = (offset, 0, 0);
                 offset += 2.5f;
             }
-            primitivesPrefab.Instantiate();
+            primitivesPrefab.Instantiate(lightingScene);
 
 
             CompositionManager.LoadSelectedComposition();
@@ -85,10 +94,6 @@ namespace Trigraphic_GameEngineV1
             if (KeyboardState.IsKeyDown(Keys.Escape))
             {
                 Close();
-            }
-            if (KeyboardState.IsKeyDown(Keys.Tab))
-            {
-                InputManager.GrabCursor(!InputManager.CursorGrabbed);
             }
 
             base.OnUpdateFrame(args);

@@ -10,10 +10,14 @@ namespace Trigraphic_GameEngineV1
 {
     internal class PlayerBehaviour : Component
     {
+        public PlayerBehaviour(TextRenderer text)
+        {
+            _text = text;
+        }
+        TextRenderer _text;
         GameObject _cam;
         protected override void OnLoad()
         {
-
             _cam = gameObject.GetComponentInChildren<Camera>().gameObject;
             InputManager.MouseMove += InputManager_MouseMove;
             InputManager.GrabCursor();
@@ -39,8 +43,33 @@ namespace Trigraphic_GameEngineV1
             lastMouse = e.Position;
         }
 
+        float fpsHigh, fpsLow;
+        float resetTime = float.MaxValue;
+        float? fpsAvr = null;
         protected override void OnUpdate(float deltaTime)
         {
+            var fps = 1f / deltaTime;
+
+            resetTime += deltaTime;
+            if (resetTime > 2)
+            {
+                resetTime = 0;
+                fpsHigh = 0;
+                fpsLow = float.MaxValue;
+                if (fpsAvr == null) fpsAvr = fps;
+                else fpsAvr = (fpsAvr + fps) / 2;
+            }
+
+            if (fps > fpsHigh) fpsHigh = fps;
+            else if (fps < fpsLow) fpsLow = fps;
+            _text.Text =
+                $"fps avr: {(int)fpsAvr.Value}{Environment.NewLine}" +
+                $"fps ^: {(int)fpsHigh}{Environment.NewLine}" +
+                $"fps v: {(int)fpsLow}{Environment.NewLine}" +
+                $"x: {(int)gameObject.GlobalPosition.X}{Environment.NewLine}" +
+                $"y: {(int)gameObject.GlobalPosition.Y}{Environment.NewLine}" +
+                $"z: {(int)gameObject.GlobalPosition.Z}{Environment.NewLine}";
+
             if (InputManager.GetKeyDown(Keys.Tab)) { InputManager.GrabCursor(!InputManager.CursorGrabbed); first = true; }
             if (!InputManager.CursorGrabbed) return;
 

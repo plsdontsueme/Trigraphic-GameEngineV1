@@ -5,17 +5,29 @@ namespace Trigraphic_GameEngineV1
 {
     internal static class ResourceManager
     {
-        public static readonly Shader DEFAULT_SHADER = 
+        public static readonly Shader DEFAULT_SHADER_LIT =
             new("...//..//..//..//..//Rsc//Common//Shaders//DefaultShader");
+        public static readonly Shader DEFAULT_SHADER_UNLIT =
+            new("...//..//..//..//..//Rsc//Common//Shaders//DefaultShaderUnlit");
         public static readonly Shader DEFAULT_SHADER_LIGHTSOURCE =
             new Shader("...//..//..//..//..//Rsc//Common//Shaders//LightShader");
 
-        public static readonly Material DEFAULT_MATERIAL = new(DEFAULT_SHADER)
+        public static readonly Material DEFAULT_MATERIAL = new(DEFAULT_SHADER_LIT)
         {
             Color = Color4.White,
             DiffuseMap = new Texture("...//..//..//..//..//Rsc//Common//Textures//uvcheck1k.jpg"),
             SpecularMap = new Texture("...//..//..//..//..//Rsc//Common//Textures//default_specular.png"),
             Shininess = 8f,
+        };
+
+        public static readonly Font DEFAULT_FONT = new Font(
+                "...//..//..//..//..//Rsc//Common//Fonts//arial.ttf",
+                ResourceManager.DEFAULT_SHADER_UNLIT,
+                80,
+                Font.CharacterRange.BasicLatin, Font.CharacterRange.Latin1Supplement
+                )
+        {
+            Color = Color4.White
         };
 
         public static readonly Mesh PRIMITIVE_CUBE = 

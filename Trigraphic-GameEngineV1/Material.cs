@@ -2,7 +2,7 @@
 
 namespace Trigraphic_GameEngineV1
 {
-    internal sealed class Material
+    internal class Material
     {
         public Material(Shader shader)
         {

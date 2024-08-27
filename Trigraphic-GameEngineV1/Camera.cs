@@ -6,43 +6,79 @@ namespace Trigraphic_GameEngineV1
     {
         #region main camera logic
         static Dictionary<int, Camera> _mainCameras = new();
-        int? cameraSlot;
+        int? _cameraSlot;
+        public Camera(int mainCameraSlotTarget = 0, bool isOrthographic = false)
+        {
+            _cameraSlot = mainCameraSlotTarget;
+            _isOrthographic = isOrthographic;
+        }
+
         public static Camera? MainCamera(int slot = 0) => _mainCameras[slot];
         public void SetMainCamera(int slot = 0)
         {
             if (_mainCameras.ContainsKey(slot))
             {
-                _mainCameras[slot].cameraSlot = null;
+                _mainCameras[slot]._cameraSlot = null;
                 _mainCameras.Remove(slot);
             }
             _mainCameras.Add(slot, this);
-            cameraSlot = slot;
+            _cameraSlot = slot;
         }
         protected override void OnLoad()
         {
-            if (!_mainCameras.ContainsKey(0))
+            if (_cameraSlot.HasValue && !_mainCameras.ContainsKey(_cameraSlot.Value))
             {
-                _mainCameras.Add(0, this);
-                cameraSlot = 0;
+                _mainCameras.Add(_cameraSlot.Value, this);
+            }
+            else
+            {
+                _cameraSlot = null;
             }
         }
         protected override void OnUnload()
         {
-            if (cameraSlot.HasValue)
+            if (_cameraSlot.HasValue)
             {
-                _mainCameras.Remove(cameraSlot.Value);
-                cameraSlot = null;
+                _mainCameras.Remove(_cameraSlot.Value);
+                _cameraSlot = null;
             } 
         }
         #endregion
 
+        #region perspective camera
+        static readonly Vector3 _UP = Vector3.UnitY;
+        static readonly Vector3 _FORWARD = -Vector3.UnitZ;
 
-        static readonly Vector3 UP = Vector3.UnitY;
-        static readonly Vector3 FORWARD = -Vector3.UnitZ;
         float _fov = float.Pi * 0.4f;
         float _near = 0.01f;
         float _far = 100;
+        public void SetPerspectiveCamera(float? fov = null, float? near = null, float? far = null)
+        {
+            if (fov.HasValue) _fov = fov.Value;
+            if (near.HasValue) _near = near.Value;
+            if (far.HasValue) _far = far.Value;
+            _isOrthographic = false;
+            _aspectRatioCheck = 0;
+        }
+        #endregion
 
+        bool _isOrthographic;
+
+        #region orthographic camera
+        float _height = 20;
+        float _nearOrtho = 0f;
+        float _farOrtho = 10;
+        public void SetOrthographicCamera(float? height = null, float? near = null, float? far = null)
+        {
+            if (height.HasValue) _height = height.Value;
+            if (near.HasValue) _nearOrtho = near.Value;
+            if (far.HasValue) _farOrtho = far.Value;
+            _isOrthographic = true;
+            _aspectRatioCheck = 0;
+        }
+        #endregion
+
+        #region matrix logic
         Matrix4 _viewMatrix;
         Quaternion _rotationCheck;
         Vector3 _positionCheck;
@@ -53,8 +89,8 @@ namespace Trigraphic_GameEngineV1
                 _rotationCheck = gameObject.GlobalRotation;
                 _positionCheck = gameObject.GlobalPosition;
 
-                var cameraDirection = gameObject.GlobalRotation * FORWARD;
-                var cameraRight = Vector3.Normalize(Vector3.Cross(UP, cameraDirection));
+                var cameraDirection = gameObject.GlobalRotation * _FORWARD;
+                var cameraRight = Vector3.Normalize(Vector3.Cross(_UP, cameraDirection));
                 var cameraUp = Vector3.Cross(cameraDirection, cameraRight);
 
                 var mat0 = new Matrix4(new Vector4(-cameraRight, 0), new Vector4(cameraUp, 0), new Vector4(-cameraDirection, 0), new Vector4(Vector3.Zero, 1));
@@ -77,10 +113,12 @@ namespace Trigraphic_GameEngineV1
             if (_aspectRatioCheck != EngineWindow.aspectRatio)
             {
                 _aspectRatioCheck = EngineWindow.aspectRatio;
-                _projectionMatrix = Matrix4.CreatePerspectiveFieldOfView(_fov, EngineWindow.aspectRatio, _near, _far);
+                _projectionMatrix = _isOrthographic 
+                    ? Matrix4.CreateOrthographic(_height * _aspectRatioCheck, _height, _nearOrtho, _farOrtho)
+                    : Matrix4.CreatePerspectiveFieldOfView(_fov, _aspectRatioCheck, _near, _far);
             }         
             return ref _projectionMatrix;
         }
-
+        #endregion
     }
 }

@@ -24,6 +24,7 @@ namespace Trigraphic_GameEngineV1
             }
         }
 
+        #region shader program
         public sealed class ShaderProgram : IDisposable
         {
             static class _UniformConvention
@@ -269,6 +270,7 @@ namespace Trigraphic_GameEngineV1
             }
             #endregion
         }
+        #endregion
 
         #region texture
         public static void CreateTextureBuffer(ImageResult image, out int handle)
@@ -288,7 +290,7 @@ namespace Trigraphic_GameEngineV1
         public static void CreateMeshBuffer(float[] vertexData, uint[] indexData,
             out int vbo, out int vao, out int ebo)
         {        
-            vbo = GL.GenBuffer(); //-VertexBufferObject
+            vbo = GL.GenBuffer(); //-_vbo
             GL.BindBuffer(BufferTarget.ArrayBuffer, vbo);
             GL.BufferData(
                 BufferTarget.ArrayBuffer, 
@@ -296,7 +298,7 @@ namespace Trigraphic_GameEngineV1
                 BufferUsageHint.StaticDraw
                 );
             
-            vao = GL.GenVertexArray(); //-VertexArrayObject
+            vao = GL.GenVertexArray(); //-_vao
             GL.BindVertexArray(vao);
                    
             ebo = GL.GenBuffer(); //-ElementBufferObject
