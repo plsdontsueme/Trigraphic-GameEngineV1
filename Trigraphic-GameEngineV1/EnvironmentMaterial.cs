@@ -19,7 +19,7 @@ namespace Trigraphic_GameEngineV1
                 var baseColor = new Vector3(_color.R, _color.G, _color.B) * _color.A;
                 Ambient = baseColor * .1f;
                 Diffuse = baseColor;
-                Specular = baseColor;
+                Specular = baseColor * .3f;
             }
         }
 

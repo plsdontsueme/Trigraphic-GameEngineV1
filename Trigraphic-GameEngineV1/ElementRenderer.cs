@@ -27,7 +27,7 @@ namespace Trigraphic_GameEngineV1
 
         protected ElementRenderer()
         {
-            _material = ResourceManager.DEFAULT_MATERIAL;
+            _material = Material.DEFAULT;
         }
         protected ElementRenderer(Material material)
         {

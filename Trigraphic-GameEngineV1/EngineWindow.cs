@@ -1,4 +1,4 @@
-﻿using OpenTK.Graphics.OpenGL4;
+﻿﻿using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
@@ -38,7 +38,7 @@ namespace Trigraphic_GameEngineV1
             //test code
             CompositionManager.AddComposition(
                 "main",
-                new EnvironmentMaterial(Color4.White),
+                new EnvironmentMaterial(Color4.Gray),
                 ResourceManager.DEFAULT_SHADER_LIT,
                 ResourceManager.DEFAULT_SHADER_UNLIT,
                 ResourceManager.DEFAULT_SHADER_LIGHTSOURCE
@@ -57,8 +57,10 @@ namespace Trigraphic_GameEngineV1
             var Headlight = GameObject.CreatePrefab(Cam, new SpotLight());
             Headlight.Position = (0, 0.1f, -0.1f);
             Headlight.Rotation = Quaternion.FromEulerAngles(float.Pi/2, 0, 0);
-            Headlight.Dimensions = (0.1f, 0.1f, 0.1f);
+            Headlight.Dimensions *= .1f;
             Player.Instantiate();
+
+            var image = new GameObject(new ImageRenderer("...//..//..//..//..//Rsc//Images//baller.jpg", ResourceManager.DEFAULT_SHADER_UNLIT));
 
             var lightingScene = new GameObject();
             lightingScene.Position = (0, 0, 0);
@@ -71,7 +73,7 @@ namespace Trigraphic_GameEngineV1
 
             var eaglePrefab = ResourceManager.ImportTgxPrefab(
                  Path.Combine("...//..//..//..//..//Rsc//Files3d", "eagle.tgx"), ResourceManager.DEFAULT_SHADER_LIT);
-            eaglePrefab.Scale *= .1f;
+            eaglePrefab.Children[0].Dimensions *= .1f;
             eaglePrefab.Instantiate(lightingScene);
 
             var primitivesPrefab = ResourceManager.ImportTgxPrefab(

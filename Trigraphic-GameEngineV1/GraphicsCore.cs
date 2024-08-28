@@ -172,7 +172,7 @@ namespace Trigraphic_GameEngineV1
                 if (_uniforms.ContainsKey(_UniformConvention.POINTLIGHT_COUNT))
                 {
                     GL.Uniform1(_uniforms[_UniformConvention.POINTLIGHT_COUNT], PointLight.PointLights.Count);
-                    for (int i =  0; i < PointLight.PointLights.Count; i++)
+                    for (int i = 0; i < PointLight.PointLights.Count; i++)
                     {
                         var light = PointLight.PointLights[i];
                         string uniformBase = _UniformConvention.POINTLIGHT_LIST + i;
@@ -210,7 +210,7 @@ namespace Trigraphic_GameEngineV1
             {
                 if (_usedShader != this) throw new InvalidOperationException("called shader is not used");
                 //if (element.material.shader.program != this) throw new ArgumentException("argument shader mismatch");
-                
+
                 GL.UniformMatrix4(_uniforms[_UniformConvention.MATRIX_MODEL], true, ref element.gameObject.GetModelMatrixRef());
 
             }
@@ -224,10 +224,10 @@ namespace Trigraphic_GameEngineV1
                 if (_uniforms.ContainsKey(_UniformConvention.MATERIAL_DIFFUSE))
                     _ApplyTexture(material.DiffuseMap.Handle, TextureUnit.Texture0);
                 if (_uniforms.ContainsKey(_UniformConvention.MATERIAL_SPECULAR))
-                    _ApplyTexture(material.DiffuseMap.Handle, TextureUnit.Texture1);
+                    _ApplyTexture(material.SpecularMap.Handle, TextureUnit.Texture1);
                 if (_uniforms.ContainsKey(_UniformConvention.MATERIAL_SHININESS))
                     GL.Uniform1(_uniforms[_UniformConvention.MATERIAL_SHININESS], material.Shininess);
-                
+
                 static void _ApplyTexture(int handle, TextureUnit textureUnit)
                 {
                     GL.ActiveTexture(textureUnit);
@@ -289,34 +289,34 @@ namespace Trigraphic_GameEngineV1
         #region mesh
         public static void CreateMeshBuffer(float[] vertexData, uint[] indexData,
             out int vbo, out int vao, out int ebo)
-        {        
+        {
             vbo = GL.GenBuffer(); //-_vbo
             GL.BindBuffer(BufferTarget.ArrayBuffer, vbo);
             GL.BufferData(
-                BufferTarget.ArrayBuffer, 
-                vertexData.Length * sizeof(float), vertexData, 
+                BufferTarget.ArrayBuffer,
+                vertexData.Length * sizeof(float), vertexData,
                 BufferUsageHint.StaticDraw
                 );
-            
+
             vao = GL.GenVertexArray(); //-_vao
             GL.BindVertexArray(vao);
-                   
+
             ebo = GL.GenBuffer(); //-ElementBufferObject
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, ebo);
             GL.BufferData(
-                BufferTarget.ElementArrayBuffer, 
-                indexData.Length * sizeof(uint), indexData, 
+                BufferTarget.ElementArrayBuffer,
+                indexData.Length * sizeof(uint), indexData,
                 BufferUsageHint.StaticDraw
                 );
 
             GL.VertexAttribPointer(
-                0, 3, VertexAttribPointerType.Float, false, 
+                0, 3, VertexAttribPointerType.Float, false,
                 8 * sizeof(float), 0
                 );
             GL.EnableVertexAttribArray(0);
 
             GL.VertexAttribPointer(
-                1, 2, VertexAttribPointerType.Float, false, 
+                1, 2, VertexAttribPointerType.Float, false,
                 8 * sizeof(float), 3 * sizeof(float)
                 );
             GL.EnableVertexAttribArray(1);

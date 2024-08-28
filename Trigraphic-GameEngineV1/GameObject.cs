@@ -25,7 +25,7 @@ namespace Trigraphic_GameEngineV1
             get => _parent;
             set
             {
-                if (value == null) 
+                if (value == null)
                     throw new NullReferenceException("ordinary gameobjects must have a parent");
                 if (_parent != value)
                 {
@@ -53,7 +53,7 @@ namespace Trigraphic_GameEngineV1
             if (subject == this) return true;
             foreach (GameObject child in _children)
             {
-                if (child._IsThisOrChild(subject)) 
+                if (child._IsThisOrChild(subject))
                     return true;
             }
             return false;
@@ -139,7 +139,8 @@ namespace Trigraphic_GameEngineV1
                 case 0: _gPositionValid = false; break;
                 case 1: _gRotationValid = false; break;
                 case 2: _gScaleValid = false; break;
-                case -1: _gPositionValid = false;
+                case -1:
+                    _gPositionValid = false;
                     _gRotationValid = false;
                     _gScaleValid = false;
                     break;
@@ -158,7 +159,7 @@ namespace Trigraphic_GameEngineV1
                 if (_parent == null)
                 {
                     _globalPosition = _localPosition;
-                    _globalRotation = _localRotation; 
+                    _globalRotation = _localRotation;
                     _globalScaleMatrix = Matrix4.CreateScale(_localScale);
                 }
                 else
@@ -169,7 +170,7 @@ namespace Trigraphic_GameEngineV1
                         _globalPosition = scaledLocalPosition * _parent._GetGlobalScaleApproximation() + _parent._globalPosition;
                         //if approximation proves inaccurate:
                         //_globalPosition = Vector3.TransformPosition(scaledLocalPosition, _parent._globalScaleMatrix) + _parent._globalPosition;
-                        
+
                         _gPositionValid = true;
                     }
 
@@ -308,7 +309,7 @@ namespace Trigraphic_GameEngineV1
         }
         protected void _Update(float deltaTime)
         {
-            if(!isLoaded) throw new InvalidOperationException("cant update a unloaded gameobject");
+            if (!isLoaded) throw new InvalidOperationException("cant update a unloaded gameobject");
 
             EngineDebugManager.Send("update obj");
             EngineDebugManager.Send(_children.Count);
@@ -347,7 +348,7 @@ namespace Trigraphic_GameEngineV1
             }
             Parent = parent;
         }
-        public bool isPrefab {  get; private set; }
+        public bool isPrefab { get; private set; }
         protected GameObject(Component[] components, GameObject? transformRefenence)
         {
             _readOnlyChildren = new ReadOnlyCollection<GameObject>(_children);
@@ -407,7 +408,7 @@ namespace Trigraphic_GameEngineV1
             var componentsCopy = new Component[_components.Count];
             for (int i = 0; i < componentsCopy.Length; i++)
                 componentsCopy[i] = _components[i].ShallowCopy();
-            
+
             var prefabCopy = new GameObject(componentsCopy, this);
             foreach (var child in _children)
             {

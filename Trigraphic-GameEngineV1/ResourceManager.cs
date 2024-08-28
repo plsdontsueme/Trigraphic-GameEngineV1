@@ -12,14 +12,6 @@ namespace Trigraphic_GameEngineV1
         public static readonly Shader DEFAULT_SHADER_LIGHTSOURCE =
             new Shader("...//..//..//..//..//Rsc//Common//Shaders//LightShader");
 
-        public static readonly Material DEFAULT_MATERIAL = new(DEFAULT_SHADER_LIT)
-        {
-            Color = Color4.White,
-            DiffuseMap = new Texture("...//..//..//..//..//Rsc//Common//Textures//uvcheck1k.jpg"),
-            SpecularMap = new Texture("...//..//..//..//..//Rsc//Common//Textures//default_specular.png"),
-            Shininess = 8f,
-        };
-
         public static readonly Font DEFAULT_FONT = new Font(
                 "...//..//..//..//..//Rsc//Common//Fonts//arial.ttf",
                 ResourceManager.DEFAULT_SHADER_UNLIT,
@@ -27,17 +19,21 @@ namespace Trigraphic_GameEngineV1
                 Font.CharacterRange.BasicLatin, Font.CharacterRange.Latin1Supplement
                 )
         {
-            Color = Color4.White
         };
 
-        public static readonly Mesh PRIMITIVE_CUBE = 
+        public static readonly Mesh PRIMITIVE_QUAD =
+            ImportTgxmMesh("...//..//..//..//..//Rsc//Common//Primitives//Quad.tgxm");
+        public static readonly Mesh PRIMITIVE_CUBE =
             ImportTgxmMesh("...//..//..//..//..//Rsc//Common//Primitives//Cube.tgxm");
-        public static readonly Mesh PRIMITIVE_SPHERE = 
+        public static readonly Mesh PRIMITIVE_SPHERE =
             ImportTgxmMesh("...//..//..//..//..//Rsc//Common//Primitives//Sphere.tgxm");
         public static readonly Mesh PRIMITIVE_CONE =
             ImportTgxmMesh("...//..//..//..//..//Rsc//Common//Primitives//Cone.tgxm");
+
         public static readonly Mesh UTILITYMESH_LIGHTSOURCE =
             ImportTgxmMesh("...//..//..//..//..//Rsc//Common//Primitives//LightBulb.tgxm");
+
+
 
         static Mesh ImportTgxmMesh(string filePath)
         {
@@ -120,7 +116,7 @@ namespace Trigraphic_GameEngineV1
                 float z = ReadFloat();
                 return new Quaternion(x, y, z, w);
             }
-            ImageResult? ReadImage()
+            Texture? ReadImage()
             {
                 bool hasImage = ReadBool();
                 if (!hasImage) return null;
@@ -133,12 +129,12 @@ namespace Trigraphic_GameEngineV1
                 Array.Copy(byteData, offset, imageData, 0, length);
                 offset += length;
 
-                return new ImageResult
+                return new Texture (new ImageResult
                 {
                     Width = width,
                     Height = height,
                     Data = imageData
-                };
+                });
             }
             #endregion
 
@@ -163,19 +159,13 @@ namespace Trigraphic_GameEngineV1
                 var specularMap = ReadImage();
                 float shininess = ReadFloat();
 
-                materials[i] = new Material(shader)
-                {
-                    Color = ResourceManager.DEFAULT_MATERIAL.Color,
-                    DiffuseMap = diffuseMap == null
-                     ? ResourceManager.DEFAULT_MATERIAL.DiffuseMap
-                     : new Texture(diffuseMap),
-                    SpecularMap = specularMap == null
-                     ? ResourceManager.DEFAULT_MATERIAL.SpecularMap
-                     : new Texture(specularMap),
-                    Shininess = shininess > 0
-                     ? shininess
-                     : ResourceManager.DEFAULT_MATERIAL.Shininess
-                };
+                materials[i] = new Material(
+                    shader,
+                    null,
+                    diffuseMap ?? null,
+                    specularMap ?? null,
+                    shininess
+                    );
             }
 
             for (int i = 0; i < meshCount; i++)
