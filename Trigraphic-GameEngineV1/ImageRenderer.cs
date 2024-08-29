@@ -10,7 +10,7 @@ namespace Trigraphic_GameEngineV1
     internal sealed class ImageRenderer : ElementRenderer
     {
         public ImageRenderer(string path, Shader shader) 
-            : base(new Material(shader, diffuseMap: new Texture(path)))
+            : base(new Material(shader, diffuseMap: new Texture(Path.Combine("...//..//..//..//..//Rsc//Images", path))))
         { }
 
         protected override void OnLoad()

@@ -78,6 +78,7 @@ namespace Trigraphic_GameEngineV1
             if (!new FileInfo(filePath).Extension.Equals(".tgx"))
                 throw new ArgumentException("file is not of the TGX-Format");
 
+            filePath = Path.Combine("...//..//..//..//..//Rsc//TGX_Files", filePath);
             var byteData = File.ReadAllBytes(filePath);
 
             int offset = 0;

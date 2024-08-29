@@ -60,7 +60,7 @@ namespace Trigraphic_GameEngineV1
             Headlight.Dimensions *= .1f;
             Player.Instantiate();
 
-            var image = new GameObject(new ImageRenderer("...//..//..//..//..//Rsc//Images//baller.jpg", ResourceManager.DEFAULT_SHADER_UNLIT));
+            var image = new GameObject(new ImageRenderer("baller.jpg", ResourceManager.DEFAULT_SHADER_UNLIT));
 
             var lightingScene = new GameObject();
             lightingScene.Position = (0, 0, 0);
@@ -71,13 +71,11 @@ namespace Trigraphic_GameEngineV1
             var pointLight = new GameObject(lightingScene, new PointLight(Color4.Yellow));
             pointLight.Position = (9, 0.4f, 0);
 
-            var eaglePrefab = ResourceManager.ImportTgxPrefab(
-                 Path.Combine("...//..//..//..//..//Rsc//Files3d", "eagle.tgx"), ResourceManager.DEFAULT_SHADER_LIT);
+            var eaglePrefab = ResourceManager.ImportTgxPrefab("eagle.tgx", ResourceManager.DEFAULT_SHADER_LIT);
             eaglePrefab.Children[0].Dimensions *= .1f;
             eaglePrefab.Instantiate(lightingScene);
 
-            var primitivesPrefab = ResourceManager.ImportTgxPrefab(
-                Path.Combine("...//..//..//..//..//Rsc//Files3d", "objblender_primitives.tgx"), ResourceManager.DEFAULT_SHADER_LIT);
+            var primitivesPrefab = ResourceManager.ImportTgxPrefab("objblender_primitives.tgx", ResourceManager.DEFAULT_SHADER_LIT);
             float offset = 0.0f;
             foreach (var c in primitivesPrefab.Children)
             {
