@@ -2,7 +2,7 @@
 
 namespace Trigraphic_GameEngineV1
 {
-    internal class ElementRenderer : Component
+    internal abstract class ElementRenderer : ComponentStatic
     {
         Material _material;
         public Material material
@@ -14,9 +14,9 @@ namespace Trigraphic_GameEngineV1
                     throw new ArgumentNullException("value");
                 if (_isLoaded)
                 {
-                    _material?.shader.RemoveElementRenderer(this);
+                    RenderSystem.RemoveElement(this);
                     _material = value;
-                    _material.shader.AddElementRenderer(this);
+                    RenderSystem.AddElement(this);
                 }
                 else
                 {
@@ -25,27 +25,20 @@ namespace Trigraphic_GameEngineV1
             }
         }
 
-        protected ElementRenderer()
+        protected ElementRenderer(Material? material = null)
         {
-            _material = Material.DEFAULT;
-        }
-        protected ElementRenderer(Material material)
-        {
-            _material = material;
+            _material = material ?? Material.Static.DEFAULT;
         }
 
         protected override void OnLoad()
         {
-            material?.shader.AddElementRenderer(this);
+            RenderSystem.AddElement(this);
         }
         protected override void OnUnload()
         {
-            material?.shader.RemoveElementRenderer(this);
+            RenderSystem.RemoveElement(this);
         }
 
-        public virtual void RenderElement()
-        {
-            EngineDebugManager.Send("render element");
-        }
+        public abstract void RenderElement();
     }
 }

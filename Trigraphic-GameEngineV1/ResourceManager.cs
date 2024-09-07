@@ -5,63 +5,13 @@ namespace Trigraphic_GameEngineV1
 {
     internal static class ResourceManager
     {
-        public static readonly Shader DEFAULT_SHADER_LIT =
-            new("...//..//..//..//..//Rsc//Common//Shaders//DefaultShader");
-        public static readonly Shader DEFAULT_SHADER_UNLIT =
-            new("...//..//..//..//..//Rsc//Common//Shaders//DefaultShaderUnlit");
-        public static readonly Shader DEFAULT_SHADER_LIGHTSOURCE =
-            new Shader("...//..//..//..//..//Rsc//Common//Shaders//LightShader");
+        
 
-        public static readonly Font DEFAULT_FONT = new Font(
-                "...//..//..//..//..//Rsc//Common//Fonts//arial.ttf",
-                ResourceManager.DEFAULT_SHADER_UNLIT,
-                80,
-                Font.CharacterRange.BasicLatin, Font.CharacterRange.Latin1Supplement
-                )
+        
+
+        public static GameObject ImportTgxPrefab(string filePath, Shader? shader = null)
         {
-        };
-
-        public static readonly Mesh PRIMITIVE_QUAD =
-            ImportTgxmMesh("...//..//..//..//..//Rsc//Common//Primitives//Quad.tgxm");
-        public static readonly Mesh PRIMITIVE_CUBE =
-            ImportTgxmMesh("...//..//..//..//..//Rsc//Common//Primitives//Cube.tgxm");
-        public static readonly Mesh PRIMITIVE_SPHERE =
-            ImportTgxmMesh("...//..//..//..//..//Rsc//Common//Primitives//Sphere.tgxm");
-        public static readonly Mesh PRIMITIVE_CONE =
-            ImportTgxmMesh("...//..//..//..//..//Rsc//Common//Primitives//Cone.tgxm");
-
-        public static readonly Mesh UTILITYMESH_LIGHTSOURCE =
-            ImportTgxmMesh("...//..//..//..//..//Rsc//Common//Primitives//LightBulb.tgxm");
-
-
-
-        static Mesh ImportTgxmMesh(string filePath)
-        {
-            if (!new FileInfo(filePath).Extension.Equals(".tgxm"))
-                throw new ArgumentException("file is not of the TGXM-Format");
-
-            var byteData = File.ReadAllBytes(filePath);
-
-            int offset = 0;
-
-            int vertexElementCount = BitConverter.ToInt32(byteData, offset);
-            offset += sizeof(int);
-            int indexCount = BitConverter.ToInt32(byteData, offset);
-            offset += sizeof(int);
-
-            float[] vertexData = new float[vertexElementCount];
-            Buffer.BlockCopy(byteData, offset, vertexData, 0, vertexElementCount * sizeof(float));
-            offset += vertexElementCount * sizeof(float);
-
-            uint[] indexData = new uint[indexCount];
-            Buffer.BlockCopy(byteData, offset, indexData, 0, indexCount * sizeof(uint));
-
-            return new Mesh(vertexData, indexData);
-        }
-
-        public static GameObject ImportTgxPrefab(string filePath, Shader shader)
-        {
-            var rootObjects = ImportTgxPrefabScene(filePath, shader);
+            var rootObjects = ImportTgxPrefabScene(filePath, shader ?? Shader.Static.LIT);
             if (rootObjects.Count == 1) return rootObjects[0];
             else
             {

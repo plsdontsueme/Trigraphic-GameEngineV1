@@ -20,7 +20,6 @@ namespace Trigraphic_GameEngineV1
 
         public override void RenderElement()
         {
-            base.RenderElement();
             mesh.Draw();
         }
     }

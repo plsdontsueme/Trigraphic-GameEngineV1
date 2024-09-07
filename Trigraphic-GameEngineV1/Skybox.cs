@@ -2,9 +2,9 @@
 
 namespace Trigraphic_GameEngineV1
 {
-    internal sealed class EnvironmentMaterial
+    internal sealed class Skybox
     {
-        public EnvironmentMaterial(Color4? dirLightColor = null)
+        public Skybox(Color4? dirLightColor = null)
         {
             DirLightColor = dirLightColor ?? Color4.White;
         }
@@ -23,7 +23,7 @@ namespace Trigraphic_GameEngineV1
             }
         }
 
-        public Vector3 DirLightDirection = (1, -1, -1);
+        public Vector3 DirLightDirection = (.81f, -.72f, -.9f);
         public Vector3 Ambient { get; private set; }
         public Vector3 Diffuse { get; private set; }
         public Vector3 Specular { get; private set; }

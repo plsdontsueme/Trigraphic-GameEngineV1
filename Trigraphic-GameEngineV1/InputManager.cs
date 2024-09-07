@@ -29,6 +29,15 @@ namespace Trigraphic_GameEngineV1
         public static bool GetMouseUp(MouseButton button) => _engineWindow.MouseState.IsButtonReleased(button);
 
         public static Vector2 MousePosition => _engineWindow.MousePosition;
+        public static Vector2 MousePositionCameraSpace(Camera camera)
+        {
+            if (!camera.IsOrthographic) throw new ArgumentException("camera must be orthographic");
+
+            var x = (MousePosition.X * EngineWindow.InverseSize.X - .5f) * camera.ViewportHeight * EngineWindow.AspectRatio;
+            var y = (MousePosition.Y * EngineWindow.InverseSize.Y - .5f) * camera.ViewportHeight;
+            return new Vector2(x, -y);
+        }
+
 
         public static bool CursorGrabbed { get; private set; }
         public static void GrabCursor(bool state = true)

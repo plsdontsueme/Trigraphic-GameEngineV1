@@ -13,7 +13,7 @@ namespace Trigraphic_GameEngineV1
         public SpotLight(Color4? color = null)
         {
             Color = color ?? Color4.White;
-            Range = 32;
+            Range = 100;
             ConeAngleDeg = 12.5f;
             SmoothingAngleDeg = 5f;
         }

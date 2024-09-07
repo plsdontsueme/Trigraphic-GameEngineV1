@@ -6,47 +6,21 @@ namespace Trigraphic_GameEngineV1
 {
     internal sealed class Shader : IDisposable
     {
-        #region renderer logic
-        List<ElementRenderer> _elementRenderers = new();
-        public void AddElementRenderer(ElementRenderer renderer)
+        public static class Static
         {
-            if (renderer.material.shader != this)
-                throw new InvalidOperationException("added renderer doesnt match shader");
-            if (_elementRenderers.Contains(renderer))
-                throw new InvalidOperationException("renderer already added");
-            _elementRenderers.Add(renderer);
+            public static readonly Shader LIT =
+                new("...//..//..//..//..//Rsc//Common//Shaders//DefaultShader");
+            public static readonly Shader UNLIT =
+                new("...//..//..//..//..//Rsc//Common//Shaders//DefaultShaderUnlit");
+            public static readonly Shader UNLIT_SINGLECOLOR =
+                new Shader("...//..//..//..//..//Rsc//Common//Shaders//LightShader");
         }
-        public void RemoveElementRenderer(ElementRenderer renderer)
-        {
-            if (!_elementRenderers.Contains(renderer))
-                throw new InvalidOperationException("renderer already removed");
-            _elementRenderers.Remove(renderer);
-        }
-
-        public void RenderAllElements(EnvironmentMaterial environment)
-        {
-            Camera? camera = Camera.MainCamera(CameraSlot);
-            if (camera == null) throw new NullReferenceException("chosen camera slot not populated");
-
-            _shaderProgram.UseProgram();
-            _shaderProgram.ApplyEnvironmentMaterial(camera, environment);
-            foreach (ElementRenderer renderer in _elementRenderers)
-            {
-                _shaderProgram.ApplyModelTransform(renderer);
-                _shaderProgram.ApplyMaterial(renderer.material);
-                renderer.RenderElement();
-            }          
-        }
-        #endregion
 
         #region constructor logic
-        public int CameraSlot;
-
-        GraphicsCore.ShaderProgram _shaderProgram;
-        public Shader(string shaderDirectory, int usedCameraSlot = 0)
+        public readonly GraphicsCore.ShaderProgram ShaderProgram;
+        public Shader(string shaderDirectory)
         {
-            CameraSlot = usedCameraSlot;
-            _shaderProgram = new(shaderDirectory);
+            ShaderProgram = new(shaderDirectory);
         }
         #endregion
 
@@ -59,16 +33,15 @@ namespace Trigraphic_GameEngineV1
                 if (disposing)
                 {
                     //-free managed resources (if any)
-                    _elementRenderers.Clear();
                 }
 
                 //-free unmanaged resources
-                _shaderProgram.Dispose();
+                ShaderProgram.Dispose();
 
                 _disposed = true;
             }
-            else EngineDebugManager.throwNewOperationRedundancyWarning("dispose wal already called");
-            EngineDebugManager.Send("dispose called");
+            else DebugManager.throwNewOperationRedundancyWarning("dispose wal already called");
+            DebugManager.Send("dispose called");
         }
         public void Dispose()
         {
@@ -81,7 +54,7 @@ namespace Trigraphic_GameEngineV1
             {
                 throw new Exception("GPU Resource leak - Dispose wasnt called 0o0");
             }
-            EngineDebugManager.Send("finalizer called");
+            DebugManager.Send("finalizer called");
         }
         #endregion
     }

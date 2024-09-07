@@ -8,6 +8,44 @@ namespace Trigraphic_GameEngineV1
 {
     internal sealed class Mesh : IDisposable
     {
+        public static class Static
+        {
+            public static readonly Mesh QUAD =
+                ImportTgxm("...//..//..//..//..//Rsc//Common//Primitives//Quad.tgxm");
+            public static readonly Mesh CUBE =
+                ImportTgxm("...//..//..//..//..//Rsc//Common//Primitives//Cube.tgxm");
+            public static readonly Mesh SPHERE =
+                ImportTgxm("...//..//..//..//..//Rsc//Common//Primitives//Sphere.tgxm");
+            public static readonly Mesh CONE =
+                ImportTgxm("...//..//..//..//..//Rsc//Common//Primitives//Cone.tgxm");
+            public static readonly Mesh LIGHTBULB =
+                ImportTgxm("...//..//..//..//..//Rsc//Common//Primitives//LightBulb.tgxm");
+
+            public static Mesh ImportTgxm(string filePath)
+            {
+                if (!new FileInfo(filePath).Extension.Equals(".tgxm"))
+                    throw new ArgumentException("file is not of the TGXM-Format");
+
+                var byteData = File.ReadAllBytes(filePath);
+
+                int offset = 0;
+
+                int vertexElementCount = BitConverter.ToInt32(byteData, offset);
+                offset += sizeof(int);
+                int indexCount = BitConverter.ToInt32(byteData, offset);
+                offset += sizeof(int);
+
+                float[] vertexData = new float[vertexElementCount];
+                Buffer.BlockCopy(byteData, offset, vertexData, 0, vertexElementCount * sizeof(float));
+                offset += vertexElementCount * sizeof(float);
+
+                uint[] indexData = new uint[indexCount];
+                Buffer.BlockCopy(byteData, offset, indexData, 0, indexCount * sizeof(uint));
+
+                return new Mesh(vertexData, indexData);
+            }
+        }
+
         int vao, vbo, ebo, indexLength;
 
         public Mesh(float[] vertexData, uint[] indexData)
@@ -37,8 +75,8 @@ namespace Trigraphic_GameEngineV1
 
                 _disposed = true;
             }
-            else EngineDebugManager.throwNewOperationRedundancyWarning("dispose wal already called");
-            EngineDebugManager.Send("dispose called");
+            else DebugManager.throwNewOperationRedundancyWarning("dispose wal already called");
+            DebugManager.Send("dispose called");
         }
         public void Dispose()
         {
@@ -51,7 +89,7 @@ namespace Trigraphic_GameEngineV1
             {
                 throw new Exception("GPU Resource leak - Dispose wasnt called 0o0");
             }
-            EngineDebugManager.Send("finalizer called");
+            DebugManager.Send("finalizer called");
         }
         #endregion
     }

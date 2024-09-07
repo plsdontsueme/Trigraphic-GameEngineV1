@@ -16,7 +16,7 @@ namespace Trigraphic_GameEngineV1
             GL.ClearColor(clearColor);
             if (cullFace) GL.Enable(EnableCap.CullFace);
             if (depthTest) GL.Enable(EnableCap.DepthTest);
-            if (multisample) GL.Enable(EnableCap.Multisample); //AntiAlising (neccessary?, see no difference)
+            if (multisample) GL.Enable(EnableCap.Multisample); //AntiAlising
             if (blend)
             {
                 GL.Enable(EnableCap.Blend); // may disable for regular 3d rendering
@@ -128,10 +128,10 @@ namespace Trigraphic_GameEngineV1
                     _uniforms.Add(key, location);
                 }
 
-                EngineDebugManager.Send("/////////////////");
+                DebugManager.Send("/////////////////");
                 foreach (var key in _uniforms.Keys)
                 {
-                    EngineDebugManager.Send(key + " -- " + _uniforms[key]);
+                    DebugManager.Send(key + " -- " + _uniforms[key]);
                 }
 
                 //GL.UseProgram(_handle);
@@ -149,7 +149,7 @@ namespace Trigraphic_GameEngineV1
                 GL.UseProgram(_handle);
                 _usedShader = this;
             }
-            public void ApplyEnvironmentMaterial(Camera camera, EnvironmentMaterial environment)
+            public void ApplyCamera(Camera camera)
             {
                 if (_usedShader != this) throw new InvalidOperationException("called shader is not used");
 
@@ -157,16 +157,20 @@ namespace Trigraphic_GameEngineV1
                 GL.UniformMatrix4(_uniforms[_UniformConvention.MATRIX_PROJECTION], true, ref camera.GetProjectionMatrixRef());
 
                 if (_uniforms.ContainsKey(_UniformConvention.VIEWPOS))
-                    GL.Uniform3(_uniforms[_UniformConvention.VIEWPOS], camera.gameObject.GlobalPosition);
+                    GL.Uniform3(_uniforms[_UniformConvention.VIEWPOS], camera.Position);
+            }
+            public void ApplySkybox(Skybox skybox)
+            {
+                if (_usedShader != this) throw new InvalidOperationException("called shader is not used");
 
                 if (_uniforms.ContainsKey(_UniformConvention.DIRLIGHT_DIRECTION))
-                    GL.Uniform3(_uniforms[_UniformConvention.DIRLIGHT_DIRECTION], environment.DirLightDirection);
+                    GL.Uniform3(_uniforms[_UniformConvention.DIRLIGHT_DIRECTION], skybox.DirLightDirection);
                 if (_uniforms.ContainsKey(_UniformConvention.DIRLIGHT_AMBIENT))
-                    GL.Uniform3(_uniforms[_UniformConvention.DIRLIGHT_AMBIENT], environment.Ambient);
+                    GL.Uniform3(_uniforms[_UniformConvention.DIRLIGHT_AMBIENT], skybox.Ambient);
                 if (_uniforms.ContainsKey(_UniformConvention.DIRLIGHT_DIFFUSE))
-                    GL.Uniform3(_uniforms[_UniformConvention.DIRLIGHT_DIFFUSE], environment.Diffuse);
+                    GL.Uniform3(_uniforms[_UniformConvention.DIRLIGHT_DIFFUSE], skybox.Diffuse);
                 if (_uniforms.ContainsKey(_UniformConvention.DIRLIGHT_SPECULAR))
-                    GL.Uniform3(_uniforms[_UniformConvention.DIRLIGHT_SPECULAR], environment.Specular);
+                    GL.Uniform3(_uniforms[_UniformConvention.DIRLIGHT_SPECULAR], skybox.Specular);
 
                 //-pointLights
                 if (_uniforms.ContainsKey(_UniformConvention.POINTLIGHT_COUNT))
@@ -206,18 +210,16 @@ namespace Trigraphic_GameEngineV1
                     }
                 }
             }
-            public void ApplyModelTransform(ElementRenderer element)
+            public void ApplyModelMatrix(ref Matrix4 modelMatrix)
             {
                 if (_usedShader != this) throw new InvalidOperationException("called shader is not used");
-                //if (element.material.shader.program != this) throw new ArgumentException("argument shader mismatch");
 
-                GL.UniformMatrix4(_uniforms[_UniformConvention.MATRIX_MODEL], true, ref element.gameObject.GetModelMatrixRef());
-
+                GL.UniformMatrix4(_uniforms[_UniformConvention.MATRIX_MODEL], true, ref modelMatrix);
             }
             public void ApplyMaterial(Material material)
             {
                 if (_usedShader != this) throw new InvalidOperationException("called shader is not used");
-                //if (material.shader.program != this) throw new ArgumentException("argument shader mismatch");
+                if (material.shader.ShaderProgram != this) throw new ArgumentException("argument shader mismatch");
 
                 if (_uniforms.ContainsKey(_UniformConvention.MATERIAL_COLOR))
                     GL.Uniform4(_uniforms[_UniformConvention.MATERIAL_COLOR], material.Color);
@@ -233,7 +235,6 @@ namespace Trigraphic_GameEngineV1
                     GL.ActiveTexture(textureUnit);
                     GL.BindTexture(TextureTarget.Texture2D, handle);
                 }
-
             }
 
             #region IDisposable Support
@@ -252,8 +253,8 @@ namespace Trigraphic_GameEngineV1
 
                     _disposed = true;
                 }
-                else EngineDebugManager.throwNewOperationRedundancyWarning("dispose wal already called");
-                EngineDebugManager.Send("dispose called");
+                else DebugManager.throwNewOperationRedundancyWarning("dispose wal already called");
+                DebugManager.Send("dispose called");
             }
             public void Dispose()
             {
@@ -266,23 +267,30 @@ namespace Trigraphic_GameEngineV1
                 {
                     throw new Exception("GPU Resource leak - Dispose wasnt called 0o0");
                 }
-                EngineDebugManager.Send("finalizer called");
+                DebugManager.Send("finalizer called");
             }
             #endregion
         }
         #endregion
 
         #region texture
-        public static void CreateTextureBuffer(ImageResult image, out int handle)
+        public static void CreateTextureBuffer(ImageResult image, out int handle, bool smoothe)
         {
             handle = GL.GenTexture();
             GL.BindTexture(TextureTarget.Texture2D, handle);
+
             GL.TexImage2D(
                 TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba,
                 image.Width, image.Height, 0,
                 PixelFormat.Rgba, PixelType.UnsignedByte, image.Data
                 );
+
             GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.LinearMipmapLinear);
+            var magFilter = smoothe ? (int)TextureMagFilter.Linear : (int)TextureMagFilter.Nearest;
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, magFilter);
+
+            GL.BindTexture(TextureTarget.Texture2D, 0);
         }
         #endregion
 

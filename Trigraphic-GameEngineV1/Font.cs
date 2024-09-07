@@ -1,20 +1,20 @@
 ﻿using StbImageSharp;
-using static StbTrueTypeSharp.StbTrueType;
+using StbTrueTypeSharp;
+using System.Collections.ObjectModel;
 
 namespace Trigraphic_GameEngineV1
 {
-    internal sealed class Font : Material
+    internal sealed class Font : Texture
     {
-        public struct GlyphInfo
+        public static class Static
         {
-            public float X0, Y0, X1, Y1;
-            public float Width, Height;
-            public float XOffset, YOffset;
-            public float XAdvance;
+            public static readonly Font ARIAL =
+            CreateFont(
+                "...//..//..//..//..//Rsc//Common//Fonts//arial.ttf",
+                80,
+                CharacterRange.BasicLatin, CharacterRange.Latin1Supplement
+                );
         }
-        public readonly Dictionary<int, GlyphInfo> glyphs;
-        public readonly float lineHeight;
-
         public struct CharacterRange
         {
             //https://jrgraphix.net/r/Unicode/
@@ -43,50 +43,60 @@ namespace Trigraphic_GameEngineV1
                 End = end;
             }
         }
-
-
-        public Font(string path, Shader unlitShader, float charResolution, params CharacterRange[] characterSet) 
-            : base(unlitShader)
+        public struct GlyphInfo
         {
-            LoadFont(path, charResolution, characterSet, out DiffuseMap, out  glyphs, out lineHeight);
+            public float X0, Y0, X1, Y1;
+            public float Width, Height;
+            public float XOffset, YOffset;
+            public float XAdvance;
         }
 
-        static void LoadFont(string path, float charHeightRes, CharacterRange[] characterSet, out Texture glyphAtlas, out Dictionary<int, GlyphInfo> glyphs, out float lineHeight)
+        public readonly ReadOnlyDictionary<int, GlyphInfo> Glyphs;
+        public readonly float LineHeight;
+
+
+        private Font(float lineHeight, Dictionary<int, GlyphInfo> glyphs, ImageResult fontAtlas, bool smoothe) : base(fontAtlas, smoothe)
+        {
+            Glyphs = new(glyphs);
+            LineHeight = lineHeight;
+        }
+
+        public static Font CreateFont(string path, float charResolutionV, params CharacterRange[] characterSet)
         {
             if (characterSet.Length == 0) throw new ArgumentException("no character set specified");
 
             byte[] ttf = File.ReadAllBytes(path);
-            stbtt_fontinfo fontInfo = CreateFont(ttf, 0);
+            StbTrueType.stbtt_fontinfo fontInfo = StbTrueType.CreateFont(ttf, 0);
 
             if (fontInfo == null) throw new InvalidDataException("Failed to init font");
 
-            var bitmapHeight = (int)(charHeightRes * 1.1f);
+            var bitmapHeight = (int)(charResolutionV * 1.1f);
             var charCount = 0;
             foreach (var charRange in characterSet)
                 charCount += charRange.Size;
             var bitmapWidth = charCount * bitmapHeight / 2;
 
             byte[] bitmap = new byte[bitmapWidth * bitmapHeight];
-            stbtt_pack_context context = new();
+            StbTrueType.stbtt_pack_context context = new();
             unsafe
             {
                 fixed (byte* pixelsPtr = bitmap)
                 {
-                    stbtt_PackBegin(context, pixelsPtr, bitmapWidth, bitmapHeight, bitmapWidth, (int)(charHeightRes * .1f), null);
+                    StbTrueType.stbtt_PackBegin(context, pixelsPtr, bitmapWidth, bitmapHeight, bitmapWidth, (int)(charResolutionV * .1f), null);
                 }
             }
 
-            lineHeight = 1;
+            var lineHeight = 1; // char height / charResolutionV
 
             Dictionary<int, GlyphInfo> glyphDict = new Dictionary<int, GlyphInfo>();
             foreach (var range in characterSet)
             {
-                var charData = new stbtt_packedchar[range.Size];
+                var charData = new StbTrueType.stbtt_packedchar[range.Size];
                 unsafe
                 {
-                    fixed (stbtt_packedchar* charDataPtr = charData)
+                    fixed (StbTrueType.stbtt_packedchar* charDataPtr = charData)
                     {
-                        stbtt_PackFontRange(context, fontInfo.data, 0, charHeightRes, range.Start, range.Size, charDataPtr);
+                        StbTrueType.stbtt_PackFontRange(context, fontInfo.data, 0, charResolutionV, range.Start, range.Size, charDataPtr);
                     }
                 }
 
@@ -98,17 +108,17 @@ namespace Trigraphic_GameEngineV1
                         Y0 = 1f - (float)charData[i].y1 / bitmapHeight,
                         X1 = (float)charData[i].x1 / bitmapWidth,
                         Y1 = 1f - (float)charData[i].y0 / bitmapHeight,
-                        Width = (charData[i].x1 - charData[i].x0) / charHeightRes,
-                        Height = (charData[i].y1 - charData[i].y0) / charHeightRes,
-                        XOffset = charData[i].xoff / charHeightRes,
-                        YOffset = charData[i].yoff / charHeightRes,
-                        XAdvance = charData[i].xadvance / charHeightRes
+                        Width = (charData[i].x1 - charData[i].x0) / charResolutionV,
+                        Height = (charData[i].y1 - charData[i].y0) / charResolutionV,
+                        XOffset = charData[i].xoff / charResolutionV,
+                        YOffset = charData[i].yoff / charResolutionV,
+                        XAdvance = charData[i].xadvance / charResolutionV
                     };
 
                     glyphDict.Add(i + range.Start, glyphInfo);
                 }
             }
-            stbtt_PackEnd(context);
+            StbTrueType.stbtt_PackEnd(context);
 
             byte[] image = new byte[bitmap.Length * 4];
             int iy1 = bitmapHeight - 1;
@@ -126,9 +136,9 @@ namespace Trigraphic_GameEngineV1
                 iy1--;
             }
 
-            var imageData = new ImageResult() { Data = image, Width = bitmapWidth, Height = bitmapHeight };
-            glyphAtlas = new Texture(imageData);
-            glyphs = glyphDict;
+            var atlasImage = new ImageResult() { Data = image, Width = bitmapWidth, Height = bitmapHeight };
+
+            return new Font(lineHeight, glyphDict, atlasImage, charResolutionV > 25);
         }
     }
 }

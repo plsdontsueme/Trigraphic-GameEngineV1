@@ -8,7 +8,6 @@ namespace Trigraphic_GameEngineV1
     {
         #region parenting logic
         List<GameObject> _children = new();
-        ReadOnlyCollection<GameObject> _readOnlyChildren;
         void _AddChild(GameObject child)
         {
             _children.Add(child);
@@ -17,9 +16,11 @@ namespace Trigraphic_GameEngineV1
         {
             _children.Remove(child);
         }
-        GameObject? _parent;
 
+        ReadOnlyCollection<GameObject> _readOnlyChildren;
         public IReadOnlyList<GameObject> Children => _readOnlyChildren;
+
+        GameObject? _parent;
         public GameObject? Parent
         {
             get => _parent;
@@ -29,19 +30,19 @@ namespace Trigraphic_GameEngineV1
                     throw new NullReferenceException("ordinary gameobjects must have a parent");
                 if (_parent != value)
                 {
-                    if (isPrefab != value.isPrefab) throw new InvalidOperationException("non prefabs and prefabs cannot mix in the hirarchy");
+                    if (IsPrefab != value.IsPrefab) throw new InvalidOperationException("non prefabs and prefabs cannot mix in the hirarchy");
                     if (_IsThisOrChild(value))
                         throw new InvalidOperationException("a child cannot be the its own or parent of their own parent");
                     _parent?._RemoveChild(this);
                     _parent = value;
                     _parent._AddChild(this);
-                    if (_parent.isLoaded)
+                    if (_parent.IsLoaded)
                     {
-                        if (!isLoaded) _Load();
+                        if (!IsLoaded) _Load();
                     }
                     else
                     {
-                        if (isLoaded) _Unload();
+                        if (IsLoaded) _Unload();
                     }
 
                     _InvalidateTransform();
@@ -125,14 +126,18 @@ namespace Trigraphic_GameEngineV1
             }
         }
 
-        bool _transformValid;
-        bool _gPositionValid;
-        bool _gRotationValid;
-        bool _gScaleValid;
+        bool _transformValid = true;
+        bool _gPositionValid = true;
+        bool _gRotationValid = true;
+        bool _gScaleValid = true;
         void _InvalidateTransform(int aspect = -1)
         {
-            _transformValid = false;
-            _modelMatrixValid = false;
+            if (_transformValid)
+            {
+                _transformValid = false;
+                _modelMatrixValid = false;
+                UpdateSystem.EnqueueTransformUpdate(this);
+            }
 
             switch (aspect)
             {
@@ -151,11 +156,11 @@ namespace Trigraphic_GameEngineV1
         {
             return new Vector3(_globalScaleMatrix.M11, _globalScaleMatrix.M22, _globalScaleMatrix.M33);
         }
-        void _UpdateTransform()
+        public void UpdateTransform()
         {
             if (!_transformValid)
             {
-                EngineDebugManager.Send("update transform");
+                if (DebugManager.UPDATETRANSFORMMESSAGES) DebugManager.Send("update transform");
                 if (_parent == null)
                 {
                     _globalPosition = _localPosition;
@@ -170,15 +175,12 @@ namespace Trigraphic_GameEngineV1
                         _globalPosition = scaledLocalPosition * _parent._GetGlobalScaleApproximation() + _parent._globalPosition;
                         //if approximation proves inaccurate:
                         //_globalPosition = Vector3.TransformPosition(scaledLocalPosition, _parent._globalScaleMatrix) + _parent._globalPosition;
-
-                        _gPositionValid = true;
                     }
 
                     if (!_gRotationValid)
                     {
                         _globalRotation = _parent._globalRotation * _localRotation;
 
-                        _gRotationValid = true;
                         _gScaleValid = false;
                     }
 
@@ -188,8 +190,6 @@ namespace Trigraphic_GameEngineV1
                         var inverseRotationMatrix = Matrix4.Invert(rotationMatrix);
                         var scalingMatrix = Matrix4.CreateScale(_localScale);
                         _globalScaleMatrix = _parent._globalScaleMatrix * inverseRotationMatrix * scalingMatrix * rotationMatrix;
-
-                        _gScaleValid = true;
                     }
 
                 }
@@ -198,15 +198,31 @@ namespace Trigraphic_GameEngineV1
 
                 foreach (var child in _children)
                 {
-                    child._InvalidateTransform();
+                    if (!_gRotationValid)
+                    {
+                        child._InvalidateTransform(0);
+                        child._InvalidateTransform(1);
+                    }
+                    else if (!_gPositionValid)
+                    { 
+                        child._InvalidateTransform(0); 
+                    }
+                    if (!_gScaleValid)
+                    {
+                        child._InvalidateTransform(0);
+                        child._InvalidateTransform(2);
+                    }
                 }
+                _gPositionValid = true;
+                _gRotationValid = true;
+                _gScaleValid = true;
             }
         }
         #endregion
 
         #region model matrix logic
         Matrix4 _modelMatrix;
-        bool _modelMatrixValid;
+        bool _modelMatrixValid = false;
         public ref Matrix4 GetModelMatrixRef()
         {
             if (!_modelMatrixValid)
@@ -223,26 +239,40 @@ namespace Trigraphic_GameEngineV1
         #endregion
 
         #region component logic
-        List<Component> _components = new();
-        public void AddComponent(Component component)
+        List<ComponentStatic> _components = new();
+        public void AddComponent(ComponentStatic component)
         {
-            component.ObjAssign(this);
             _components.Add(component);
-            if (isLoaded) component.Load();
+            component.ObjAssign(this);
+            if (IsLoaded) component.Load();
         }
-        public void RemoveComponent(Component component)
+        public void AddComponents(params ComponentStatic[] components)
         {
-            if (isLoaded) component.Unload();
-            _components.Remove(component);
+            _components.AddRange(components);
+            if (IsLoaded)
+            {
+                foreach (var component in _components)
+                {
+                    component.ObjAssign(this);
+                    component.Load();
+                }
+            }
+            else foreach (var component in _components)
+                    component.ObjAssign(this);
+        }
+        public void RemoveComponent(ComponentStatic component)
+        {
+            if (IsLoaded) component.Unload();
+            if (!_components.Remove(component)) throw new InvalidOperationException("component not in list");
             //delete component
         }
-        public T? GetComponent<T>() where T : Component
+        public T? GetComponent<T>() where T : ComponentStatic
         {
             T? result = _components.OfType<T>().FirstOrDefault();
-            if (result == null) EngineDebugManager.throwNewOperationRedundancyWarning($"GameObject does not contain a Component of Type '{typeof(T)}'");
+            if (result == null) DebugManager.throwNewOperationRedundancyWarning($"GameObject does not contain a Component of Type '{typeof(T)}'");
             return result;
         }
-        public T? GetComponentInChildren<T>() where T : Component
+        public T? GetComponentInChildren<T>() where T : ComponentStatic
         {
             foreach (var child in _children)
             {
@@ -253,10 +283,10 @@ namespace Trigraphic_GameEngineV1
                 }
             }
 
-            EngineDebugManager.throwNewOperationRedundancyWarning($"No Component of Type '{typeof(T)}' found in GameObject or its children.");
+            DebugManager.throwNewOperationRedundancyWarning($"No Component of Type '{typeof(T)}' found in GameObject or its children.");
             return null;
         }
-        T? _GetComponentInSelfOrChildren<T>() where T : Component
+        T? _GetComponentInSelfOrChildren<T>() where T : ComponentStatic
         {
             T? component = _components.OfType<T>().FirstOrDefault();
             if (component != null)
@@ -278,12 +308,12 @@ namespace Trigraphic_GameEngineV1
         #endregion
 
         #region event logic
-        public bool isLoaded { get; private set; }
+        public bool IsLoaded { get; private set; }
         protected void _Load()
         {
-            if (isLoaded)
+            if (IsLoaded)
                 throw new InvalidOperationException("gameobject already loaded");
-            isLoaded = true;
+            IsLoaded = true;
             foreach (var component in _components)
             {
                 component.Load();
@@ -295,61 +325,36 @@ namespace Trigraphic_GameEngineV1
         }
         protected void _Unload()
         {
-            if (!isLoaded)
+            if (!IsLoaded)
                 throw new InvalidOperationException("gameobject already unloaded");
+            IsLoaded = false;
             foreach (var component in _components)
             {
                 component.Unload();
             }
-            isLoaded = false;
             foreach (var child in _children)
             {
                 child._Unload();
             }
         }
-        protected void _Update(float deltaTime)
-        {
-            if (!isLoaded) throw new InvalidOperationException("cant update a unloaded gameobject");
-
-            EngineDebugManager.Send("update obj");
-            EngineDebugManager.Send(_children.Count);
-            _UpdateTransform();
-            foreach (var component in _components)
-            {
-                component.Update(deltaTime);
-            }
-            foreach (var child in _children)
-            {
-                child._Update(deltaTime);
-            }
-        }
         #endregion
 
         #region creation logic
-        public GameObject(params Component[] components)
+        public GameObject(params ComponentStatic[] components)
         {
             _readOnlyChildren = new ReadOnlyCollection<GameObject>(_children);
 
-            foreach (var component in components)
-            {
-                AddComponent(component);
-            }
-            _parent = CompositionManager.GetSelectedRootObject();
-            _parent._children.Add(this);
-            if (_parent.isLoaded) _Load();
+            AddComponents(components);
+            _ParentToRoot();
         }
-        public GameObject(GameObject? parent, params Component[] components)
+        public GameObject(GameObject? parent, params ComponentStatic[] components)
         {
             _readOnlyChildren = new ReadOnlyCollection<GameObject>(_children);
 
-            foreach (var component in components)
-            {
-                AddComponent(component);
-            }
+            AddComponents(components);
             Parent = parent;
         }
-        public bool isPrefab { get; private set; }
-        protected GameObject(Component[] components, GameObject? transformRefenence)
+        protected GameObject(ComponentStatic[] components, GameObject? transformRefenence)
         {
             _readOnlyChildren = new ReadOnlyCollection<GameObject>(_children);
 
@@ -360,52 +365,55 @@ namespace Trigraphic_GameEngineV1
                 _localRotation = transformRefenence._localRotation;
                 _localScale = transformRefenence._localScale;
             }
-            foreach (var component in components)
-            {
-                AddComponent(component);
-            }
+
+            AddComponents(components);
         }
-        public static GameObject CreatePrefab(params Component[] components)
+        public void _ParentToRoot()
+        {
+            _parent = SceneManager.RootGameObject;
+            _parent._children.Add(this);
+            if (_parent.IsLoaded) _Load();
+        }
+        #endregion
+
+        #region prefab logic
+        public bool IsPrefab { get; private set; }
+        public static GameObject CreatePrefab(params ComponentStatic[] components)
         {
             var prefab = new GameObject(components, null);
-            prefab.isPrefab = true;
+            prefab.IsPrefab = true;
             return prefab;
         }
-        public static GameObject CreatePrefab(GameObject? parent, params Component[] components)
+        public static GameObject CreatePrefab(GameObject parent, params ComponentStatic[] components)
         {
-            var prefab = CreatePrefab(components);
+            var prefab = new GameObject(components, null);
+            prefab.IsPrefab = true;
             prefab.Parent = parent;
             return prefab;
         }
+
+        public void Instantiate(GameObject? parent = null)
+        {
+            if (!IsPrefab) throw new InvalidOperationException("only a prefab can be instantiated manually");
+
+            _RemovePrefabLabel();
+            if (parent != null) Parent = parent;
+            else _ParentToRoot();
+        }
         void _RemovePrefabLabel()
         {
-            isPrefab = false;
+            IsPrefab = false;
             foreach (var child in _children)
             {
                 child._RemovePrefabLabel();
             }
         }
-        public void Instantiate()
-        {
-            if (!isPrefab) throw new InvalidOperationException("only a prefab can be instantiated manually");
 
-            _RemovePrefabLabel();
-            _parent = CompositionManager.GetSelectedRootObject();
-            _parent._children.Add(this);
-            if (_parent.isLoaded) _Load();
-        }
-        public void Instantiate(GameObject parent)
+        public GameObject InstantiateCopy(GameObject? parent = null)
         {
-            if (!isPrefab) throw new InvalidOperationException("only a prefab can be instantiated manually");
+            if (!IsPrefab) throw new InvalidOperationException("only a prefab can be instantiated manually");
 
-            _RemovePrefabLabel();
-            Parent = parent;
-        }
-        public GameObject InstantiateCopy()
-        {
-            if (!isPrefab) throw new InvalidOperationException("only a prefab can be instantiated manually");
-
-            var componentsCopy = new Component[_components.Count];
+            var componentsCopy = new ComponentStatic[_components.Count];
             for (int i = 0; i < componentsCopy.Length; i++)
                 componentsCopy[i] = _components[i].ShallowCopy();
 
@@ -415,27 +423,8 @@ namespace Trigraphic_GameEngineV1
                 child.InstantiateCopy(prefabCopy);
             }
 
-            prefabCopy._parent = CompositionManager.GetSelectedRootObject();
-            prefabCopy._parent._children.Add(prefabCopy);
-            if (prefabCopy._parent.isLoaded) _Load();
-
-            return prefabCopy;
-        }
-        public GameObject InstantiateCopy(GameObject parent)
-        {
-            if (!isPrefab) throw new InvalidOperationException("only a prefab can be instantiated manually");
-
-            var componentsCopy = new Component[_components.Count];
-            for (int i = 0; i < componentsCopy.Length; i++)
-                componentsCopy[i] = _components[i].ShallowCopy();
-
-            var prefabCopy = new GameObject(componentsCopy, this);
-            foreach (var child in _children)
-            {
-                child.InstantiateCopy(prefabCopy);
-            }
-
-            prefabCopy.Parent = parent;
+            if (parent != null) prefabCopy.Parent = parent;
+            else prefabCopy._ParentToRoot();
 
             return prefabCopy;
         }

@@ -9,29 +9,43 @@ namespace Trigraphic_GameEngineV1
 {
     internal sealed class RootGameObject : GameObject
     {
-        public RootGameObject(out Action rootLoad, out Action rootUnload, out Action<float> rootUpdate) 
+        public RootGameObject(out Action rootLoad, out Action rootUnload) 
             : base([],null)
         {
             rootLoad = _Load;
             rootUnload = _Unload;
-            rootUpdate = _Update;
         }
 
         #region disable redundant funcionality
+        public new Vector3? Position
+        {
+            get => null;
+            set => throw new InvalidOperationException("rootgameobject cannot have a position");
+        }
+        public new Vector3? Scale
+        {
+            get => null;
+            set => throw new InvalidOperationException("rootgameobject cannot have a scale");
+        }
+        public new Quaternion? Rotation
+        {
+            get => null;
+            set => throw new InvalidOperationException("rootgameobject cannot have a rotation");
+        }
         public new GameObject? Parent
         {
             get => null;
             set => throw new InvalidOperationException("rootgameobject cannot have a parent");
         }
-        public new void AddComponent(Component component)
+        public new void AddComponent(ComponentStatic component)
         {
             throw new InvalidOperationException("rootgameobject cannot have components");
         }
-        public new void RemoveComponent(Component component)
+        public new void RemoveComponent(ComponentStatic component)
         {
             throw new InvalidOperationException("rootgameobject cannot have components");
         }
-        public new T? GetComponent<T>() where T : Component
+        public new T? GetComponent<T>() where T : ComponentStatic
         {
             throw new InvalidOperationException("rootgameobject cannot have components");
         }

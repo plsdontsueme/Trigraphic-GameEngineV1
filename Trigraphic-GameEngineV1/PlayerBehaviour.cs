@@ -8,17 +8,17 @@ using System.Threading.Tasks;
 
 namespace Trigraphic_GameEngineV1
 {
-    internal class PlayerBehaviour : Component
+    internal class PlayerBehaviour : ComponentDynamic
     {
-        public PlayerBehaviour(TextRenderer text)
+        public PlayerBehaviour(UIText text)
         {
             _text = text;
         }
-        TextRenderer _text;
+        UIText _text;
         GameObject _cam;
         protected override void OnLoad()
         {
-            _cam = gameObject.GetComponentInChildren<Camera>().gameObject;
+            _cam = gameObject.GetComponentInChildren<CameraRig>().gameObject;
             InputManager.MouseMove += InputManager_MouseMove;
             InputManager.GrabCursor();
         }
@@ -51,7 +51,7 @@ namespace Trigraphic_GameEngineV1
             var fps = 1f / deltaTime;
 
             resetTime += deltaTime;
-            if (resetTime > 2)
+            if (resetTime > .1f)
             {
                 resetTime = 0;
                 fpsHigh = 0;
@@ -83,6 +83,10 @@ namespace Trigraphic_GameEngineV1
             if (movement.Length == 0) return;
             movement.Normalize();
             gameObject.Position += (gameObject.Rotation * movement * deltaTime * 3);
+        }
+
+        protected override void OnUnload()
+        {
         }
     }
 }

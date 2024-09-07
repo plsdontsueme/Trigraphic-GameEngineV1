@@ -8,7 +8,7 @@ namespace Trigraphic_GameEngineV1
     internal class LightSource : MeshRenderer
     {
         protected LightSource()
-            : base(ResourceManager.UTILITYMESH_LIGHTSOURCE, new Material(ResourceManager.DEFAULT_SHADER_LIGHTSOURCE))
+            : base(Mesh.Static.LIGHTBULB, new Material(Shader.Static.UNLIT_SINGLECOLOR))
         { }
 
         int _range;

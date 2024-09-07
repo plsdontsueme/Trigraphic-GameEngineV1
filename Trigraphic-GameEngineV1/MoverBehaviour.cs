@@ -2,7 +2,7 @@
 
 namespace Trigraphic_GameEngineV1
 {
-    internal class MoverBehaviour : Component
+    internal class MoverBehaviour : ComponentDynamic
     {
         Vector3? _translation;
         Vector3? _rotationDirection;
@@ -21,6 +21,14 @@ namespace Trigraphic_GameEngineV1
             time += deltaTime;
             if (_rotationDirection.HasValue) gameObject.Rotation = Quaternion.FromEulerAngles(_rotationDirection.Value * time);
             if (_stretchDirection.HasValue) gameObject.Scale = Vector3.One + _stretchDirection.Value * 0.5f * (float)MathHelper.Cos(time);
+        }
+
+        protected override void OnLoad()
+        {
+        }
+
+        protected override void OnUnload()
+        {
         }
     }
 }

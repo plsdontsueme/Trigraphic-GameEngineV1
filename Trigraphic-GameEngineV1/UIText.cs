@@ -1,23 +1,19 @@
 ﻿using OpenTK.Graphics.OpenGL4;
+using OpenTK.Mathematics;
 
 namespace Trigraphic_GameEngineV1
 {
-    internal class TextRenderer : ElementRenderer
+    internal class UIText : UIElement
     {
         public string Text;
-        public Font font;
+        public Font Font;
+        public Color4 Color = Color4.White;
 
         int _vao;
         int _vbo;
-        public TextRenderer(string text = "text renderer") : base(ResourceManager.DEFAULT_FONT)
+        public UIText(string text = "UIText", Font? font = null)
         {
-            font = ResourceManager.DEFAULT_FONT;
-            Text = text;
-            Setup();
-        }
-        public TextRenderer(Font font, string text = "text renderer") : base(font)
-        {
-            this.font = font;
+            Font = font ?? Font.Static.ARIAL;
             Text = text;
             Setup();
         }
@@ -40,20 +36,25 @@ namespace Trigraphic_GameEngineV1
             GL.EnableVertexAttribArray(1);  
         }
 
-        public override void RenderElement()
+        public override bool GetRenderParameters(out Color4? color, out Texture? texture)
         {
-            base.RenderElement();
+            color = Color;
+            texture = Font;
+            return true;
+        }
 
+        public override void Render()
+        {
             GL.BindBuffer(BufferTarget.ArrayBuffer, _vbo);
 
             string[] lines = Text.Split(Environment.NewLine);
-            float y = -font.lineHeight;
+            float y = -Font.LineHeight;
             foreach (string line in lines)
             {
                 float x = 0;
                 foreach (char c in line)
                 {
-                    var g = font.glyphs[c];
+                    var g = Font.Glyphs[c];
 
                     float gy = y - g.YOffset;
                     float gx = x + g.XOffset;
@@ -69,8 +70,12 @@ namespace Trigraphic_GameEngineV1
                     GL.BindVertexArray(_vao);
                     GL.DrawArrays(PrimitiveType.TriangleStrip, 0, 4);
                 }
-                y -= font.lineHeight;
+                y -= Font.LineHeight;
             }
+        }
+
+        public override void OnMouseClick(Vector2 mouse)
+        {
         }
     }
 }

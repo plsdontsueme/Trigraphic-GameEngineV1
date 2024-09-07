@@ -15,18 +15,20 @@ namespace Trigraphic_GameEngineV1
                 Title = title,
                 StartVisible = false,
                 NumberOfSamples = 4, //AntiAliasing
-                WindowBorder = WindowBorder.Fixed,
+                WindowBorder = WindowBorder.Resizable,
             })
         {
-            CompositionManager.EngineWindowAssign(this);
+            SceneManager.Initialize(this);
             InputManager.EngineWindowAssign(this);
         }
 
-        public static float aspectRatio { get; private set; }
+        public static float AspectRatio { get; private set; }
+        public static Vector2 InverseSize { get; private set; }
         protected override void OnResize(ResizeEventArgs e)
         {
             base.OnResize(e);
-            aspectRatio = (float)e.Width / e.Height;
+            InverseSize = (1f / e.Size.X, 1f / e.Size.Y);
+            AspectRatio = (float)e.Width / e.Height;
             GL.Viewport(0, 0, e.Width, e.Height);
         }
         protected override void OnLoad()
@@ -36,23 +38,13 @@ namespace Trigraphic_GameEngineV1
             IsVisible = true;
 
             //test code
-            CompositionManager.AddComposition(
-                "main",
-                new EnvironmentMaterial(Color4.Gray),
-                ResourceManager.DEFAULT_SHADER_LIT,
-                ResourceManager.DEFAULT_SHADER_UNLIT,
-                ResourceManager.DEFAULT_SHADER_LIGHTSOURCE
-                );
-            CompositionManager.SelectComposition();
+            var FpsText = new UIText();
+            FpsText.Position = (-5, 5, 0);
+            FpsText.Size *= .5f;
 
-            var uiCam = new GameObject(new Camera(1, true));
-            ResourceManager.DEFAULT_SHADER_UNLIT.CameraSlot = 1;
-            var Text = new GameObject(new TextRenderer());
-            Text.Position = (-12, 10, 0);
-
-            var Player = GameObject.CreatePrefab(new PlayerBehaviour(Text.GetComponent<TextRenderer>()));
+            var Player = GameObject.CreatePrefab(new PlayerBehaviour(FpsText));
             Player.Position = (0, 0, 6);
-            var Cam = GameObject.CreatePrefab(Player, new Camera());
+            var Cam = GameObject.CreatePrefab(Player, new CameraRig(SceneManager.GameCamera));
             Cam.Position = (0, 1.8f, 0);
             var Headlight = GameObject.CreatePrefab(Cam, new SpotLight());
             Headlight.Position = (0, 0.1f, -0.1f);
@@ -60,7 +52,24 @@ namespace Trigraphic_GameEngineV1
             Headlight.Dimensions *= .1f;
             Player.Instantiate();
 
-            var image = new GameObject(new ImageRenderer("baller.jpg", ResourceManager.DEFAULT_SHADER_UNLIT));
+            var random = new Random();
+            var radius = 50;
+            for (int i = 0; i < 1000; i++)
+            {
+                var obj = new GameObject(new MeshRenderer(Mesh.Static.CUBE), new MoverBehaviour( rotationDirection: (random.Next(-radius, radius) / (float)radius, random.Next(-radius, radius) / (float)radius, random.Next(-radius, radius) / (float)radius)));
+                obj.Position = (random.Next(-radius, radius), random.Next(-radius, radius), random.Next(-radius, radius));
+                obj.Rotation = Quaternion.FromEulerAngles(random.Next(-radius, radius) / MathHelper.PiOver4, random.Next(-radius, radius) / MathHelper.PiOver4, random.Next(-radius, radius) / MathHelper.PiOver4);
+            }
+
+            var canvas = new GameObject(new UICanvas()).GetComponent<UICanvas>();
+            var image = new UIImage("...//..//..//..//..//Rsc//Images//chromecore.jpg");
+            image.Size *= 1.5f;
+            canvas.AddElement(image);
+            var imagePix = new UIImage("...//..//..//..//..//Rsc//Images//pix.png", false);
+            imagePix.Size *= 1.5f;
+            imagePix.Position = (2,0,0);
+            canvas.AddElement(imagePix);
+            canvas.AddElement(FpsText);
 
             var lightingScene = new GameObject();
             lightingScene.Position = (0, 0, 0);
@@ -71,11 +80,11 @@ namespace Trigraphic_GameEngineV1
             var pointLight = new GameObject(lightingScene, new PointLight(Color4.Yellow));
             pointLight.Position = (9, 0.4f, 0);
 
-            var eaglePrefab = ResourceManager.ImportTgxPrefab("eagle.tgx", ResourceManager.DEFAULT_SHADER_LIT);
+            var eaglePrefab = ResourceManager.ImportTgxPrefab("eagle.tgx");
             eaglePrefab.Children[0].Dimensions *= .1f;
             eaglePrefab.Instantiate(lightingScene);
 
-            var primitivesPrefab = ResourceManager.ImportTgxPrefab("objblender_primitives.tgx", ResourceManager.DEFAULT_SHADER_LIT);
+            var primitivesPrefab = ResourceManager.ImportTgxPrefab("objblender_primitives.tgx");
             float offset = 0.0f;
             foreach (var c in primitivesPrefab.Children)
             {
@@ -83,10 +92,9 @@ namespace Trigraphic_GameEngineV1
                 offset += 2.5f;
             }
             primitivesPrefab.Instantiate(lightingScene);
-
-
-            CompositionManager.LoadSelectedComposition();
             //test code
+
+            base.OnLoad();
         }
 
         protected override void OnUpdateFrame(FrameEventArgs args)
@@ -101,11 +109,11 @@ namespace Trigraphic_GameEngineV1
 
         protected override void OnRenderFrame(FrameEventArgs args)
         {
-            EngineDebugManager.Send("clear screen");
+            if (DebugManager.RENDERMESSAGES) DebugManager.Send("clear screen");
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
             base.OnRenderFrame(args);
             SwapBuffers();
-            EngineDebugManager.Send("swapbuffers");
+            if (DebugManager.RENDERMESSAGES) DebugManager.Send("swapbuffers");
         }
     }
 }

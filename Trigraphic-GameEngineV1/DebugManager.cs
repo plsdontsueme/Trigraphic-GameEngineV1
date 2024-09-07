@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Trigraphic_GameEngineV1
 {
-    internal static class EngineDebugManager
+    internal static class DebugManager
     {
         // warnings are used in situations where a user of the engine through
         // custom code and use in the bounds intended by the engine might create
@@ -34,6 +34,9 @@ namespace Trigraphic_GameEngineV1
             Console.ForegroundColor = ConsoleColor.DarkRed;
             Console.WriteLine(message);
         }
+
+        public const bool RENDERMESSAGES = false;
+        public const bool UPDATETRANSFORMMESSAGES = false;
         public static void Send(object message)
         {
             var senderInfo = new StackTrace().GetFrame(1)?.GetMethod()?.ReflectedType;
